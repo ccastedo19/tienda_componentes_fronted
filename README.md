@@ -1,2 +1,2 @@
-# tienda_componentes_fronted
-Sistema Tienda de componentes frontend hecho con typescript + shadcn
+# Sidebar_con_shadcn
+sibdear funcional con shadcn, con menuItems, subItems , Theme color.
