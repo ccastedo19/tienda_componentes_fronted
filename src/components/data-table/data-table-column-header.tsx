@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, ChevronsUpDown, Minus } from "lucide-react"
+import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react"
 import type { Column } from "@tanstack/react-table"
 
 import { cn } from "@/lib/utils"
@@ -21,14 +21,13 @@ export function DataTableColumnHeader<TData, TValue>({
 
   const sorted = column.getIsSorted()
 
-  // Función para ciclar: neutral → asc → desc → neutral
   const handleSort = () => {
     if (sorted === "asc") {
-      column.toggleSorting(true) // Cambia a desc
+      column.toggleSorting(true)
     } else if (sorted === "desc") {
-      column.clearSorting() // Vuelve a neutral
+      column.clearSorting()
     } else {
-      column.toggleSorting(false) // Cambia a asc
+      column.toggleSorting(false)
     }
   }
 

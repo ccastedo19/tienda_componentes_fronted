@@ -1,9 +1,7 @@
 import * as React from 'react'
 import {
   AudioWaveform,
-  BadgeCheck,
   BarChart3,
-  Bell,
   BookUser,
   ChevronRight,
   ChevronsUpDown,
@@ -63,10 +61,10 @@ import {
 const data = {
   teams: [
     {
-      name: 'Computer City',
+      name: 'Lotus Electrónica',
       logo: GalleryVerticalEnd, 
       logoImage: logo,
-      plan: 'Version 1.0',
+      plan: 'Sistema de Inventario & POS',
     },
     {
       name: 'Acme Corp.',
@@ -79,7 +77,55 @@ const data = {
       plan: 'Free',
     },
   ],
-  navMain: [
+}
+
+function getNavigationItems(rol?: string) {
+  const isAdmin = rol?.toLowerCase() === 'administrador';
+
+  if (!isAdmin) {
+    return [
+      {
+        title: "Inicio",
+        url: "/inicio",
+        icon: House,
+      },
+      {
+        title: "Punto de Venta (POS)",
+        url: "/venta",
+        icon: ArrowLeftRight,
+      },
+      {
+        title: "Operaciones",
+        icon: ArrowLeftRight,
+        items: [
+          {
+            title: "Existencias (Stock)",
+            url: "/existencias",
+          },
+          {
+            title: "Cotización",
+            url: "/cotizacion",
+          },
+          {
+            title: "Clientes",
+            url: "/clientes",
+          },
+        ],
+      },
+      {
+        title: "Caja",
+        icon: Wallet,
+        items: [
+          {
+            title: "Apertura / Cierre",
+            url: "/apertura-cierre",
+          },
+        ],
+      },
+    ];
+  }
+
+  return [
     {
       title: "Inicio",
       url: "/inicio",
@@ -90,7 +136,7 @@ const data = {
       icon: BookUser,
       items: [
         {
-          title: "Usuarios",
+          title: "Personal / Usuarios",
           url: "/usuarios",
         },
         {
@@ -108,24 +154,20 @@ const data = {
           url: "/existencias",
         },
         {
-          title: "Venta",
+          title: "Venta (POS)",
           url: "/venta",
         },
         {
-          title: "Compra",
+          title: "Compras de Inventario",
           url: "/compra",
         },
         {
-          title: "Cotizacion",
+          title: "Cotización",
           url: "/cotizacion",
         },
         {
-          title: "Recepciones",
+          title: "Taller / Recepciones",
           url: "/recepciones",
-        },
-        {
-          title: "Devoluciones",
-          url: "/devoluciones",
         },
       ],
     },
@@ -134,17 +176,17 @@ const data = {
       icon: Wallet,
       items: [
         {
-          title: "Apertura/Cierre",
+          title: "Apertura / Cierre",
           url: "/apertura-cierre",
         },
         {
-          title: "Historial Caja",
+          title: "Historial de Arqueos",
           url: "/historial-caja",
         },
       ],
     },
     {
-      title: "Analisis y Reportes",
+      title: "Análisis y Reportes",
       icon: BarChart3,
       items: [
         {
@@ -156,7 +198,7 @@ const data = {
           url: "/reporte-cotizaciones",
         },
         {
-          title: "Kardex de Inventario",
+          title: "Kardex y Mermas",
           url: "/kardex-inventario",
         },
       ],
@@ -192,13 +234,12 @@ const data = {
           url: "/datos-empresa",
         },
         {
-          title: "Backup",
+          title: "Auditoría & Backup",
           url: "/backup",
         },
       ],
     },
-  ]
-  
+  ];
 }
 
 function TeamSwitcher({
@@ -217,13 +258,11 @@ function TeamSwitcher({
     return null
   }
 
- 
-return (
-  <>
-    <SidebarMenu >
+  return (
+    <SidebarMenu>
       <SidebarMenuItem>
         <SidebarMenuButton size="lg">
-          <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+          <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
             {activeTeam.logoImage ? (
               <img 
                 src={logo} 
@@ -236,16 +275,11 @@ return (
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight">
             <span className="truncate font-medium">{activeTeam.name}</span>
-            <span className="truncate text-xs">{activeTeam.plan}</span>
+            <span className="truncate text-xs text-muted-foreground">{activeTeam.plan}</span>
           </div>
         </SidebarMenuButton>
       </SidebarMenuItem>
-     
     </SidebarMenu>
-      
-    </>
-
-    
   )
 }
 
@@ -331,11 +365,9 @@ function NavMain({
   )
 }
 
-
 function getInitials(nombre: string, apellido: string) {
   const first = nombre.trim().charAt(0)
   const last = apellido.trim().charAt(0)
-
   return `${first}${last}`.toUpperCase() || "U"
 }
 
@@ -356,11 +388,12 @@ function NavUser() {
     await logout()
     navigate("/login", { replace: true })
   }
-    return (
-      <SidebarMenu>
-        <SidebarMenuItem>
-          <DropdownMenu>
-            <DropdownMenuTrigger
+
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger
             render={
               <SidebarMenuButton
                 size="lg"
@@ -368,105 +401,82 @@ function NavUser() {
               />
             }
           >
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-zinc-200 text-zinc-700 transition-colors group-hover/user-menu:bg-zinc-300 dark:bg-[#171717] dark:text-white dark:group-hover/user-menu:bg-[#262626]">{initials}</AvatarFallback>
-              </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{fullName}</span>
-                <span className="truncate text-xs">{user.email}</span>
-              </div>
-              <ChevronsUpDown className="ml-auto size-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-              side={isMobile ? 'bottom' : 'right'}
-              align="end"
-              sideOffset={4}
-            >
-              <DropdownMenuGroup>
-                <DropdownMenuLabel className="p-0 font-normal">
-                  <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-zinc-200 text-zinc-700 dark:bg-[#171717] dark:text-white">{initials}</AvatarFallback>
-                    </Avatar>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-medium">{fullName}</span>
-                      <span className="truncate text-xs">{user.email}</span>
-                    </div>
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="bg-zinc-200 text-zinc-700 transition-colors group-hover/user-menu:bg-zinc-300 dark:bg-[#171717] dark:text-white dark:group-hover/user-menu:bg-[#262626]">{initials}</AvatarFallback>
+            </Avatar>
+            <div className="grid flex-1 text-left text-sm leading-tight">
+              <span className="truncate font-medium">{fullName}</span>
+              <span className="truncate text-xs text-muted-foreground">{user.rol} • {user.email}</span>
+            </div>
+            <ChevronsUpDown className="ml-auto size-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+            side={isMobile ? 'bottom' : 'right'}
+            align="end"
+            sideOffset={4}
+          >
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="p-0 font-normal">
+                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-zinc-200 text-zinc-700 dark:bg-[#171717] dark:text-white">{initials}</AvatarFallback>
+                  </Avatar>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-medium">{fullName}</span>
+                    <span className="truncate text-xs text-muted-foreground">{user.rol} • {user.email}</span>
                   </div>
-                </DropdownMenuLabel>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
+                </div>
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
 
-                <DropdownMenuGroup>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Tema Visual</DropdownMenuLabel>
+              <DropdownMenuRadioGroup
+                value={theme}
+                onValueChange={(value) => setTheme(value)}
+              >
+                <DropdownMenuRadioItem value="light">
+                  <Sun className="size-4" />
+                  Claro
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="dark">
+                  <Moon className="size-4" />
+                  Oscuro
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="system">
+                  <Monitor className="size-4" />
+                  Sistema
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuGroup>
 
-                  <DropdownMenuLabel>
-                    Tema
-                  </DropdownMenuLabel>
-
-                  <DropdownMenuRadioGroup
-                    value={theme}
-                    onValueChange={(value) =>
-                      setTheme(value)
-                    }
-                  >
-
-                    <DropdownMenuRadioItem value="light">
-                      <Sun />
-                      Claro
-                    </DropdownMenuRadioItem>
-
-
-                    <DropdownMenuRadioItem value="dark">
-                      <Moon />
-                      Oscuro
-                    </DropdownMenuRadioItem>
-
-
-                    <DropdownMenuRadioItem value="system">
-                      <Monitor />
-                      Sistema
-                    </DropdownMenuRadioItem>
-
-                  </DropdownMenuRadioGroup>
-
-                </DropdownMenuGroup>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuGroup>
-
-                  <DropdownMenuItem>
-                    <BadgeCheck />
-                    Cuenta
-                  </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Bell />
-                  Notificaciones
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuGroup>
-                <DropdownMenuItem onClick={handleLogout}>
-                  <LogOut />
-                  Salir
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </SidebarMenuItem>
-      </SidebarMenu>
-    )
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                <LogOut className="size-4" />
+                Cerrar Sesión
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  )
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user } = useAuth();
+  const navItems = React.useMemo(() => getNavigationItems(user?.rol), [user?.rol]);
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navItems} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />
