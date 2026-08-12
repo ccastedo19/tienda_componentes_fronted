@@ -8,3 +8,11 @@ export type Cliente = {
   createdAt: string
   updatedAt: string
 }
+
+export type CreateClienteRequest = {
+  ci: string
+  nombre: string
+  apellido: string
+  telefono: string
+  email: string
+}
