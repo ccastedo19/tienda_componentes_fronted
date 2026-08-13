@@ -80,14 +80,14 @@ export const Historial_caja = () => {
         accessorKey: "montoInicial",
         header: ({ column }) => <DataTableColumnHeader column={column} title="Monto Inicial" />,
         cell: ({ row }) => (
-          <span className="text-muted-foreground">${row.original.montoInicial.toFixed(2)}</span>
+          <span className="text-muted-foreground">Bs. {row.original.montoInicial.toFixed(2)}</span>
         ),
       },
       {
         accessorKey: "montoEsperado",
         header: ({ column }) => <DataTableColumnHeader column={column} title="Saldo Esperado" />,
         cell: ({ row }) => (
-          <span className="font-medium text-foreground">${row.original.montoEsperado.toFixed(2)}</span>
+          <span className="font-medium text-foreground">Bs. {row.original.montoEsperado.toFixed(2)}</span>
         ),
       },
       {
@@ -95,7 +95,7 @@ export const Historial_caja = () => {
         header: ({ column }) => <DataTableColumnHeader column={column} title="Recuento Físico" />,
         cell: ({ row }) => {
           const rec = row.original.recuentoFisico
-          return <span>{rec !== null && rec !== undefined ? `$${rec.toFixed(2)}` : "-"}</span>
+          return <span>{rec !== null && rec !== undefined ? `Bs. ${rec.toFixed(2)}` : "-"}</span>
         },
       },
       {
@@ -118,7 +118,7 @@ export const Historial_caja = () => {
                   : "text-amber-600 dark:text-amber-400"
               }`}
             >
-              {diff > 0 ? "+" : ""}${diff.toFixed(2)}
+              {diff > 0 ? "+" : ""}Bs. {diff.toFixed(2)}
             </span>
           )
         },

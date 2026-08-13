@@ -75,7 +75,7 @@ export const Reporte_cotizaciones = () => {
         cell: ({ row }) => (
           <div>
             <p className="font-medium text-foreground">{row.original.clienteNombre}</p>
-            <p className="text-xs text-muted-foreground">CI: {row.original.clienteCi}</p>
+            <p className="text-xs text-muted-foreground">NIT: {row.original.clienteCi}</p>
           </div>
         ),
       },
@@ -98,7 +98,7 @@ export const Reporte_cotizaciones = () => {
         header: ({ column }) => <DataTableColumnHeader column={column} title="Total Estimado" />,
         cell: ({ row }) => (
           <span className="font-bold text-foreground">
-            ${row.original.totalEstimado.toFixed(2)}
+            Bs. {row.original.totalEstimado.toFixed(2)}
           </span>
         ),
       },
@@ -148,7 +148,7 @@ export const Reporte_cotizaciones = () => {
         <DataTableSearch
           value={search}
           onChange={setSearch}
-          placeholder="Buscar por código, cliente o CI..."
+          placeholder="Buscar por código, cliente o NIT..."
         />
         <Button
           type="button"

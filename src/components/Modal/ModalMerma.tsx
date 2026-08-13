@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { AlertOctagon, Plus, Trash2, DollarSign } from "lucide-react"
+import { AlertOctagon, Plus, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -248,7 +248,7 @@ export function ModalMerma({
                       <div className="flex-1">
                         <p className="font-medium text-foreground">{l.nombre}</p>
                         <p className="text-[10px] text-muted-foreground font-mono">
-                          SKU: {l.sku} • Costo: ${l.costoUnitario.toFixed(2)} c/u
+                          Código: {l.sku} • Costo: Bs. {l.costoUnitario.toFixed(2)} c/u
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -277,9 +277,11 @@ export function ModalMerma({
             </div>
           ) : (
             <div className="space-y-2 pt-2 border-t border-border">
-              <Label htmlFor="montoEf">Monto en Efectivo a Deducir de la Caja Activa ($) *</Label>
+              <Label htmlFor="montoEf">Monto en Efectivo a Deducir de la Caja Activa (Bs.) *</Label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+                  Bs.
+                </span>
                 <Input
                   id="montoEf"
                   type="number"

@@ -191,11 +191,11 @@ export function ModalOrdenTecnica({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Cliente */}
           <div className="space-y-1.5">
-            <Label htmlFor="ci">Cliente Titular (Búsqueda por CI) *</Label>
+            <Label htmlFor="ci">Cliente Titular (Búsqueda por NIT / Cédula) *</Label>
             <div className="flex items-center gap-2">
               <Input
                 id="ci"
-                placeholder="Ingresa CI del cliente..."
+                placeholder="Ingresa NIT / Cédula del cliente..."
                 value={ciSearch}
                 onChange={(e) => setCiSearch(e.target.value)}
               />
@@ -281,7 +281,7 @@ export function ModalOrdenTecnica({
                     key={i}
                     className="flex items-center justify-between p-2 rounded-md bg-muted/40 border border-border text-xs"
                   >
-                    <span>{c.nombre} (SKU: {c.sku})</span>
+                    <span>{c.nombre} (Código: {c.sku})</span>
                     <Button
                       type="button"
                       variant="ghost"
@@ -309,7 +309,7 @@ export function ModalOrdenTecnica({
                 <SelectContent>
                   {servicios.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
-                      {s.nombre} (${s.precioBaseSugerido.toFixed(2)})
+                      {s.nombre} (Bs. {s.precioBaseSugerido.toFixed(2)})
                     </SelectItem>
                   ))}
                 </SelectContent>

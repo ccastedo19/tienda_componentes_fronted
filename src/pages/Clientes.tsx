@@ -150,7 +150,7 @@ export const Clientes = () => {
       },
       {
         accessorKey: "ci",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="CI / Identificación" />,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="NIT / Cédula" />,
         cell: ({ row }) => (
           <Badge variant="outline" className="font-mono text-[11px] font-semibold">
             {row.original.ci}
@@ -336,7 +336,7 @@ export const Clientes = () => {
         <DataTableSearch
           value={search}
           onChange={setSearch}
-          placeholder="Buscar por CI, nombre, teléfono o correo..."
+          placeholder="Buscar por NIT, nombre, teléfono o correo..."
         />
         <Button
           type="button"

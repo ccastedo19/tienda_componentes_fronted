@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
-import { Plus, Edit2, Trash2, Tag, Cpu, Package } from "lucide-react"
+import { Plus, Trash2, Cpu, Package, Barcode, Pencil } from "lucide-react"
 
 import { DataTable } from "@/components/data-table/data-table"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
@@ -85,6 +85,11 @@ export const Productos = () => {
     setIsSeriesModalOpen(true)
   }
 
+  const handleOpenDelete = (p: Producto) => {
+    setProdToDelete(p)
+    setIsDeleteDialogOpen(true)
+  }
+
   const handleConfirmDelete = async () => {
     if (!prodToDelete) return
     setIsDeleting(true)
@@ -116,7 +121,7 @@ export const Productos = () => {
       },
       {
         accessorKey: "skuUnico",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="SKU" />,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Código" />,
         cell: ({ row }) => (
           <Badge variant="outline" className="font-mono text-[11px] font-semibold">
             {row.original.skuUnico}
@@ -152,7 +157,7 @@ export const Productos = () => {
         accessorKey: "precioCosto",
         header: ({ column }) => <DataTableColumnHeader column={column} title="P. Costo" />,
         cell: ({ row }) => (
-          <span className="text-muted-foreground">${row.original.precioCosto.toFixed(2)}</span>
+          <span className="text-muted-foreground">Bs. {row.original.precioCosto.toFixed(2)}</span>
         ),
       },
       {
@@ -160,7 +165,7 @@ export const Productos = () => {
         header: ({ column }) => <DataTableColumnHeader column={column} title="P. Venta" />,
         cell: ({ row }) => (
           <span className="font-semibold text-foreground">
-            ${row.original.precioVenta.toFixed(2)}
+            Bs. {row.original.precioVenta.toFixed(2)}
           </span>
         ),
       },
@@ -183,54 +188,49 @@ export const Productos = () => {
         },
       },
       {
-        id: "series",
-        header: "Series",
+        accessorKey: "stockDisponible",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Disponible" />,
         cell: ({ row }) => (
-          <Button
-            type="button"
-            variant="outline"
-            size="xs"
-            onClick={() => handleOpenSeries(row.original)}
-            className="gap-1 cursor-pointer"
-          >
-            <Tag className="size-3" />
-            Series
-          </Button>
+          <span className="font-medium text-emerald-600 dark:text-emerald-400">
+            {row.original.stockDisponible} un.
+          </span>
         ),
       },
       {
         id: "acciones",
         header: "Acciones",
-        cell: ({ row }) => {
-          const p = row.original
-          return (
-            <div className="flex items-center gap-1.5">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => handleOpenEdit(p)}
-                title="Editar producto"
-              >
-                <Edit2 className="size-3.5" />
-              </Button>
-
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => {
-                  setProdToDelete(p)
-                  setIsDeleteDialogOpen(true)
-                }}
-                title="Eliminar producto"
-                className="text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 className="size-3.5" />
-              </Button>
-            </div>
-          )
-        },
+        cell: ({ row }) => (
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => handleOpenSeries(row.original)}
+              title="Series y Trazabilidad"
+            >
+              <Barcode className="size-3.5" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => handleOpenEdit(row.original)}
+              title="Editar"
+            >
+              <Pencil className="size-3.5" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => handleOpenDelete(row.original)}
+              className="text-destructive hover:bg-destructive/10"
+              title="Eliminar"
+            >
+              <Trash2 className="size-3.5" />
+            </Button>
+          </div>
+        ),
       },
     ],
     []
@@ -244,7 +244,7 @@ export const Productos = () => {
           Catálogo de Productos
         </h1>
         <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-          Gestión integral de SKU, precios de costo y venta, umbrales de stock mínimo y números de serie (SRS-CAT-001..009).
+          Gestión integral de códigos, precios de costo y venta, umbrales de stock mínimo y números de serie (SRS-CAT-001..009).
         </p>
       </div>
 
@@ -252,7 +252,7 @@ export const Productos = () => {
         <DataTableSearch
           value={search}
           onChange={setSearch}
-          placeholder="Buscar por SKU, nombre o categoría..."
+          placeholder="Buscar por código, nombre o categoría..."
         />
 
         <Button
@@ -286,7 +286,7 @@ export const Productos = () => {
             <DialogTitle className="text-destructive">Eliminar Producto</DialogTitle>
             <DialogDescription>
               ¿Estás seguro de que deseas eliminar{" "}
-              <strong>{prodToDelete?.nombreComercial} (SKU: {prodToDelete?.skuUnico})</strong>?
+              <strong>{prodToDelete?.nombreComercial} (Código: {prodToDelete?.skuUnico})</strong>?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="pt-2">
@@ -301,10 +301,10 @@ export const Productos = () => {
             <Button
               type="button"
               variant="destructive"
-              onClick={() => void handleConfirmDelete()}
+              onClick={handleConfirmDelete}
               disabled={isDeleting}
             >
-              {isDeleting ? "Eliminando..." : "Eliminar"}
+              {isDeleting ? "Eliminando..." : "Eliminar Producto"}
             </Button>
           </DialogFooter>
         </DialogContent>

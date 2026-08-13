@@ -44,11 +44,17 @@ const EMPTY_FORM: FormValues = {
   email: "",
 }
 
+const EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
+const NIT_REGEX = /^[0-9]{5,14}$/
+
 function validate(values: FormValues): FormErrors {
   const errors: FormErrors = {}
 
-  if (!values.ci.trim()) {
-    errors.ci = "La CI es obligatoria"
+  const nitTrimmed = values.ci.trim()
+  if (!nitTrimmed) {
+    errors.ci = "El NIT / Cédula es obligatorio"
+  } else if (!NIT_REGEX.test(nitTrimmed)) {
+    errors.ci = "El NIT debe contener únicamente números enteros entre 5 y 14 dígitos"
   }
 
   if (!values.nombre.trim()) {
@@ -61,7 +67,12 @@ function validate(values: FormValues): FormErrors {
 
   const telefono = values.telefono.trim()
   if (telefono && telefono.length < 7) {
-    errors.telefono = "El teléfono debe tener al menos 7 caracteres"
+    errors.telefono = "El teléfono debe tener al menos 7 dígitos"
+  }
+
+  const emailTrimmed = values.email.trim()
+  if (emailTrimmed && !EMAIL_REGEX.test(emailTrimmed)) {
+    errors.email = "El correo debe tener un formato válido con '@' y dominio (ej: usuario@gmail.com)"
   }
 
   return errors
@@ -128,8 +139,8 @@ export function ModalCliente({
           ci: values.ci.trim(),
           nombre: values.nombre.trim(),
           apellido: values.apellido.trim(),
-          telefono: values.telefono.trim(),
-          email: values.email.trim().toLowerCase(),
+          telefono: values.telefono.trim() || undefined,
+          email: values.email.trim().toLowerCase() || undefined,
         })
         onSuccess?.(updated)
       } else {
@@ -137,8 +148,8 @@ export function ModalCliente({
           ci: values.ci.trim(),
           nombre: values.nombre.trim(),
           apellido: values.apellido.trim(),
-          telefono: values.telefono.trim(),
-          email: values.email.trim().toLowerCase(),
+          telefono: values.telefono.trim() || undefined,
+          email: values.email.trim().toLowerCase() || undefined,
         })
         onSuccess?.(created)
       }
@@ -180,16 +191,20 @@ export function ModalCliente({
 
         <form className="space-y-4" onSubmit={handleSubmit} noValidate>
           <div className="space-y-1.5">
-            <Label htmlFor="cliente-ci">Cédula de Identidad (CI) *</Label>
+            <Label htmlFor="cliente-ci">NIT / Cédula (Documento) *</Label>
             <Input
               id="cliente-ci"
               name="ci"
+              type="text"
+              inputMode="numeric"
               value={values.ci}
-              placeholder="Ej: 8654153"
-              onChange={(event) => updateField("ci", event.target.value)}
+              placeholder="Ej: 8654153012"
+              onChange={(event) => updateField("ci", event.target.value.replace(/[^0-9]/g, ""))}
+              maxLength={14}
               required
             />
             {errors.ci && <p className="text-xs text-destructive">{errors.ci}</p>}
+            <p className="text-[11px] text-muted-foreground">Solo números enteros (entre 5 y 14 dígitos).</p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -225,6 +240,7 @@ export function ModalCliente({
             <Input
               id="cliente-telefono"
               name="telefono"
+              type="tel"
               value={values.telefono}
               placeholder="Ej: 71234567"
               onChange={(event) => updateField("telefono", event.target.value)}

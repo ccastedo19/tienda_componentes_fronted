@@ -91,7 +91,7 @@ export const Reporte_ventas = () => {
           <div>
             <p className="font-medium text-foreground">{row.original.clienteNombre}</p>
             {row.original.clienteCi && (
-              <p className="text-xs text-muted-foreground">CI: {row.original.clienteCi}</p>
+              <p className="text-xs text-muted-foreground">NIT: {row.original.clienteCi}</p>
             )}
           </div>
         ),
@@ -126,7 +126,7 @@ export const Reporte_ventas = () => {
         accessorKey: "total",
         header: ({ column }) => <DataTableColumnHeader column={column} title="Total Cobrado" />,
         cell: ({ row }) => (
-          <span className="font-bold text-foreground">${row.original.total.toFixed(2)}</span>
+          <span className="font-bold text-foreground">Bs. {row.original.total.toFixed(2)}</span>
         ),
       },
       {
@@ -222,12 +222,12 @@ export const Reporte_ventas = () => {
                         <td className="p-2">
                           <p className="font-medium text-foreground">{p.productoNombre}</p>
                           <p className="text-[10px] text-muted-foreground font-mono">
-                            SKU: {p.sku} {p.numeroSerie ? `• S/N: ${p.numeroSerie}` : ""}
+                            Código: {p.sku} {p.numeroSerie ? `• S/N: ${p.numeroSerie}` : ""}
                           </p>
                         </td>
                         <td className="p-2 text-center">{p.cantidad}</td>
-                        <td className="p-2 text-right">${p.precioUnitario.toFixed(2)}</td>
-                        <td className="p-2 text-right font-semibold">${p.subtotalNeto.toFixed(2)}</td>
+                        <td className="p-2 text-right">Bs. {p.precioUnitario.toFixed(2)}</td>
+                        <td className="p-2 text-right font-semibold">Bs. {p.subtotalNeto.toFixed(2)}</td>
                       </tr>
                     ))}
                     {selectedVenta.servicios?.map((s, i) => (
@@ -236,8 +236,8 @@ export const Reporte_ventas = () => {
                           <p className="font-medium text-foreground">[Servicio] {s.servicioNombre}</p>
                         </td>
                         <td className="p-2 text-center">1</td>
-                        <td className="p-2 text-right">${s.precioFinalAplicado.toFixed(2)}</td>
-                        <td className="p-2 text-right font-semibold">${s.subtotalNeto.toFixed(2)}</td>
+                        <td className="p-2 text-right">Bs. {s.precioFinalAplicado.toFixed(2)}</td>
+                        <td className="p-2 text-right font-semibold">Bs. {s.subtotalNeto.toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -247,13 +247,13 @@ export const Reporte_ventas = () => {
               <div className="p-3 rounded-lg bg-muted/30 border border-border space-y-1">
                 {selectedVenta.metodoPago === "Pago Mixto" && (
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Efectivo: ${selectedVenta.montoEfectivo.toFixed(2)} • QR: ${selectedVenta.montoQr.toFixed(2)}</span>
-                    <span>Cambio: ${selectedVenta.cambioEfectivo.toFixed(2)}</span>
+                    <span>Efectivo: Bs. {selectedVenta.montoEfectivo.toFixed(2)} • QR: Bs. {selectedVenta.montoQr.toFixed(2)}</span>
+                    <span>Cambio: Bs. {selectedVenta.cambioEfectivo.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-sm text-foreground pt-1">
                   <span>TOTAL COBRADO:</span>
-                  <span>${selectedVenta.total.toFixed(2)}</span>
+                  <span>Bs. {selectedVenta.total.toFixed(2)}</span>
                 </div>
               </div>
             </div>

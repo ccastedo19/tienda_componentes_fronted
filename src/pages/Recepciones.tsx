@@ -105,7 +105,7 @@ export const Recepciones = () => {
         cell: ({ row }) => (
           <div>
             <p className="font-medium text-foreground">{row.original.clienteNombre}</p>
-            <p className="text-xs text-muted-foreground">CI: {row.original.clienteCi}</p>
+            <p className="text-xs text-muted-foreground">NIT: {row.original.clienteCi}</p>
           </div>
         ),
       },

@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
-import { History, AlertOctagon, ArrowDownRight, ArrowUpRight } from "lucide-react"
+import { AlertOctagon, ArrowDownRight, ArrowUpRight, ClipboardList } from "lucide-react"
 
 import { DataTable } from "@/components/data-table/data-table"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
 import { ModalMerma } from "@/components/Modal/ModalMerma"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -32,6 +33,7 @@ export const Kardex_inventario = () => {
   const [mermas, setMermas] = useState<Merma[]>([])
 
   const [isLoadingKardex, setIsLoadingKardex] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Merma modal
   const [isMermaModalOpen, setIsMermaModalOpen] = useState(false)
@@ -45,18 +47,20 @@ export const Kardex_inventario = () => {
         setSelectedProdId(prodsData[0].id)
       }
     } catch {
-      // ignore
+      setError("No se pudieron cargar los datos de inventario.")
     }
   }
 
   const loadKardexForProduct = async (prodId: string) => {
     if (!prodId) return
     setIsLoadingKardex(true)
+    setError(null)
     try {
       const data = await getKardexByProducto(prodId)
       setKardexMovimientos(data)
     } catch {
       setKardexMovimientos([])
+      setError("Error al consultar el historial de movimientos de kardex.")
     } finally {
       setIsLoadingKardex(false)
     }
@@ -193,7 +197,7 @@ export const Kardex_inventario = () => {
         header: ({ column }) => <DataTableColumnHeader column={column} title="Pérdida Económica" />,
         cell: ({ row }) => (
           <span className="font-bold text-destructive">
-            ${row.original.totalPerdida.toFixed(2)}
+            Bs. {row.original.totalPerdida.toFixed(2)}
           </span>
         ),
       },
@@ -202,28 +206,35 @@ export const Kardex_inventario = () => {
   )
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl flex items-center gap-2">
-            <History className="size-6" />
-            Kardex de Inventario y Registro de Mermas
+            <ClipboardList className="size-6" />
+            Control de Kardex y Registro de Mermas
           </h1>
           <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-            SRS-INV-001 / SRS-INV-003: Auditoría inmutable de movimientos físicos y declaración justificada de mermas.
+            Auditoría de libro mayor de movimientos por producto (SRS-INV-001) y registro inmutable de pérdidas (SRS-INV-004).
           </p>
         </div>
 
         <Button
           type="button"
-          variant="destructive"
+          variant="outline"
           onClick={() => setIsMermaModalOpen(true)}
-          className="gap-1.5 cursor-pointer"
+          className="cursor-pointer gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/10"
         >
           <AlertOctagon className="size-4" />
-          Declarar Merma
+          Registrar Merma / Pérdida
         </Button>
       </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertTitle>Error en inventario</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       <ModalMerma
         open={isMermaModalOpen}
@@ -251,13 +262,13 @@ export const Kardex_inventario = () => {
                 <Select value={selectedProdId} onValueChange={(val) => setSelectedProdId(val ?? "")}>
                   <SelectTrigger className="w-full sm:w-96">
                     <SelectValue placeholder="Selecciona un producto...">
-                      {selectedProduct ? `${selectedProduct.nombreComercial} (SKU: ${selectedProduct.skuUnico})` : undefined}
+                      {selectedProduct ? `${selectedProduct.nombreComercial} (Código: ${selectedProduct.skuUnico})` : undefined}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {productos.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
-                        {p.nombreComercial} (SKU: {p.skuUnico})
+                        {p.nombreComercial} (Código: {p.skuUnico})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -270,11 +281,11 @@ export const Kardex_inventario = () => {
                     </span>
                     <span>•</span>
                     <span>
-                      P. Costo: <strong>${selectedProduct.precioCosto.toFixed(2)}</strong>
+                      P. Costo: <strong>Bs. {selectedProduct.precioCosto.toFixed(2)}</strong>
                     </span>
                     <span>•</span>
                     <span>
-                      P. Venta: <strong>${selectedProduct.precioVenta.toFixed(2)}</strong>
+                      P. Venta: <strong>Bs. {selectedProduct.precioVenta.toFixed(2)}</strong>
                     </span>
                   </div>
                 )}
@@ -292,7 +303,7 @@ export const Kardex_inventario = () => {
             <DataTable
               columns={kardexColumns}
               data={kardexMovimientos}
-              emptyMessage="No se encontraron movimientos registrados en Kardex para este artículo."
+              emptyMessage="No se encontraron movimientos registrados en el Kardex para este producto."
             />
           )}
         </TabsContent>
@@ -301,7 +312,7 @@ export const Kardex_inventario = () => {
           <DataTable
             columns={mermaColumns}
             data={mermas}
-            emptyMessage="No se han declarado mermas o pérdidas en el sistema."
+            emptyMessage="No hay registros de mermas o pérdidas declaradas en el sistema."
           />
         </TabsContent>
       </Tabs>

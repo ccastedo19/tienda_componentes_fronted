@@ -574,7 +574,7 @@ export const Venta = () => {
           </AlertTitle>
           <AlertDescription className="mt-1 flex items-center justify-between">
             <span>
-              Total: <strong>${ventaCompletada.total.toFixed(2)}</strong> ({ventaCompletada.metodoPago}). Comprobante PDF generado.
+              Total: <strong>Bs. {ventaCompletada.total.toFixed(2)}</strong> ({ventaCompletada.metodoPago}). Comprobante PDF generado.
             </span>
             <Button
               type="button"
@@ -598,7 +598,7 @@ export const Venta = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar producto por SKU, nombre o categoría..."
+                placeholder="Buscar producto por código, nombre o categoría..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9"
@@ -652,7 +652,7 @@ export const Venta = () => {
                     <CardContent className="p-3 pt-0">
                       <div className="flex items-center justify-between mt-2">
                         <span className="text-sm font-bold text-foreground">
-                          ${prod.precioVenta.toFixed(2)}
+                          Bs. {prod.precioVenta.toFixed(2)}
                         </span>
                         <span
                           className={`text-[11px] font-medium ${
@@ -697,7 +697,7 @@ export const Venta = () => {
                   <CardContent className="p-3 pt-0">
                     <div className="flex items-center justify-between mt-2">
                       <span className="text-sm font-bold text-foreground">
-                        ${serv.precioBaseSugerido.toFixed(2)}
+                        Bs. {serv.precioBaseSugerido.toFixed(2)}
                       </span>
                       <span className="text-[11px] text-muted-foreground">Mano de obra</span>
                     </div>
@@ -731,7 +731,7 @@ export const Venta = () => {
             </CardHeader>
             <CardContent className="p-3.5 pt-0 space-y-2">
               <Input
-                placeholder="Buscar por Cédula de Identidad (CI)..."
+                placeholder="Buscar por NIT / Cédula..."
                 value={ciSearch}
                 onChange={(e) => {
                   setCiSearch(e.target.value)
@@ -750,7 +750,7 @@ export const Venta = () => {
                 </div>
                 {clienteSeleccionado && (
                   <Badge variant="outline" className="text-[10px]">
-                    CI: {clienteSeleccionado.ci}
+                    NIT: {clienteSeleccionado.ci}
                   </Badge>
                 )}
               </div>
@@ -795,7 +795,7 @@ export const Venta = () => {
                           {item.type === "producto" ? item.producto.nombreComercial : item.servicio.nombre}
                         </div>
                         <div className="text-[10px] text-muted-foreground font-mono">
-                          {item.type === "producto" ? `SKU: ${item.producto.skuUnico}` : "Servicio Técnico"}
+                          {item.type === "producto" ? `Código: ${item.producto.skuUnico}` : "Servicio Técnico"}
                         </div>
                       </div>
                       <Button
@@ -832,7 +832,7 @@ export const Venta = () => {
                         </div>
                       ) : (
                         <div className="flex items-center gap-1">
-                          <span className="text-muted-foreground text-[11px]">Precio: $</span>
+                          <span className="text-muted-foreground text-[11px]">Precio: Bs.</span>
                           <Input
                             type="number"
                             min="0"
@@ -867,10 +867,10 @@ export const Venta = () => {
 
                       <div className="font-bold text-foreground text-sm">
                         {item.type === "producto"
-                          ? `$${(
+                          ? `Bs. ${(
                               item.producto.precioVenta * item.cantidad * (1 - (item.valorDescuento || 0) / 100)
                             ).toFixed(2)}`
-                          : `$${item.precioFinalAplicado.toFixed(2)}`}
+                          : `Bs. ${item.precioFinalAplicado.toFixed(2)}`}
                       </div>
                     </div>
 
@@ -911,7 +911,7 @@ export const Venta = () => {
                 )}
                 <div className="flex items-center justify-between text-base font-bold text-foreground pt-1">
                   <span>TOTAL A COBRAR:</span>
-                  <span>${totalGeneral.toFixed(2)}</span>
+                  <span>Bs. {totalGeneral.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -950,7 +950,7 @@ export const Venta = () => {
           <DialogHeader>
             <DialogTitle>Procesar Cobro de Venta</DialogTitle>
             <DialogDescription>
-              Total a liquidar: <strong className="text-foreground text-base">${totalGeneral.toFixed(2)}</strong>
+              Total a liquidar: <strong className="text-foreground text-base">Bs. {totalGeneral.toFixed(2)}</strong>
             </DialogDescription>
           </DialogHeader>
 
@@ -975,7 +975,7 @@ export const Venta = () => {
 
             {metodoPago === "Efectivo" && (
               <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/20">
-                <Label htmlFor="montoRecibido">Monto Recibido en Efectivo ($) *</Label>
+                <Label htmlFor="montoRecibido">Monto Recibido en Efectivo (Bs.) *</Label>
                 <Input
                   id="montoRecibido"
                   type="number"
@@ -990,7 +990,7 @@ export const Venta = () => {
                   <div className="flex items-center justify-between text-xs pt-1 font-medium text-emerald-600 dark:text-emerald-400">
                     <span>Cambio / Vuelto a entregar (SRS-POS-004):</span>
                     <span className="text-sm font-bold">
-                      ${(parseFloat(montoRecibidoEfectivo) - totalGeneral).toFixed(2)}
+                      Bs. {(parseFloat(montoRecibidoEfectivo) - totalGeneral).toFixed(2)}
                     </span>
                   </div>
                 )}
@@ -1001,7 +1001,7 @@ export const Venta = () => {
               <div className="p-3 rounded-lg border border-border bg-muted/20 text-xs text-muted-foreground space-y-1">
                 <p className="font-semibold text-foreground">Liquidación QR Bancaria (SRS-POS-003)</p>
                 <p>
-                  El monto íntegro de <strong>${totalGeneral.toFixed(2)}</strong> se registrará en la cuenta de conciliación bancaria sin afectar el cajón físico.
+                  El monto íntegro de <strong>Bs. {totalGeneral.toFixed(2)}</strong> se registrará en la cuenta de conciliación bancaria sin afectar el cajón físico.
                 </p>
               </div>
             )}
@@ -1011,7 +1011,7 @@ export const Venta = () => {
                 <p className="font-semibold text-foreground">Fraccionamiento Simultáneo (SRS-POS-017)</p>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <Label htmlFor="fracEfectivo">Fracción Efectivo ($)</Label>
+                    <Label htmlFor="fracEfectivo">Fracción Efectivo (Bs.)</Label>
                     <Input
                       id="fracEfectivo"
                       type="number"
@@ -1023,7 +1023,7 @@ export const Venta = () => {
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="fracQr">Fracción QR ($)</Label>
+                    <Label htmlFor="fracQr">Fracción QR (Bs.)</Label>
                     <Input
                       id="fracQr"
                       type="number"
@@ -1039,7 +1039,7 @@ export const Venta = () => {
                 <div className="flex items-center justify-between pt-1 border-t border-border font-medium">
                   <span>Suma Entregada:</span>
                   <span>
-                    ${((parseFloat(montoRecibidoEfectivo) || 0) + (parseFloat(montoQr) || 0)).toFixed(2)}
+                    Bs. {((parseFloat(montoRecibidoEfectivo) || 0) + (parseFloat(montoQr) || 0)).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -1100,14 +1100,14 @@ export const Venta = () => {
           <DialogHeader>
             <DialogTitle>Recuperar Proforma Comercial en Carrito</DialogTitle>
             <DialogDescription>
-              SRS-POS-015: Busca cotizaciones pendientes por CI del cliente para cargarlas al POS.
+              SRS-POS-015: Busca cotizaciones pendientes por NIT / Cédula del cliente para cargarlas al POS.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Input
-                placeholder="Ingresa Cédula de Identidad (CI)..."
+                placeholder="Ingresa NIT / Cédula..."
                 value={proformaCiSearch}
                 onChange={(e) => setProformaCiSearch(e.target.value)}
               />
@@ -1132,9 +1132,9 @@ export const Venta = () => {
                     <div>
                       <p className="font-semibold text-foreground">{cot.codigoProforma}</p>
                       <p className="text-muted-foreground">
-                        Cliente: {cot.clienteNombre} (CI: {cot.clienteCi})
+                        Cliente: {cot.clienteNombre} (NIT: {cot.clienteCi})
                       </p>
-                      <p className="text-muted-foreground">Total: ${cot.totalEstimado.toFixed(2)}</p>
+                      <p className="text-muted-foreground">Total: Bs. {cot.totalEstimado.toFixed(2)}</p>
                     </div>
                     <Button
                       type="button"

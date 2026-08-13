@@ -63,7 +63,7 @@ export const Existencias = () => {
       },
       {
         accessorKey: "skuUnico",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="SKU" />,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Código" />,
         cell: ({ row }) => (
           <Badge variant="outline" className="font-mono text-[11px] font-semibold">
             {row.original.skuUnico}
@@ -184,7 +184,7 @@ export const Existencias = () => {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="rounded-lg border border-border bg-card p-3 shadow-xs">
           <span className="text-xs text-muted-foreground">Total Artículos Catálogo</span>
-          <p className="text-lg font-bold text-foreground mt-0.5">{stats.totalArticulos} SKUs</p>
+          <p className="text-lg font-bold text-foreground mt-0.5">{stats.totalArticulos} Productos</p>
         </div>
         <div className="rounded-lg border border-border bg-card p-3 shadow-xs">
           <span className="text-xs text-muted-foreground">Unidades Físicas Totales</span>
@@ -210,7 +210,7 @@ export const Existencias = () => {
         <DataTableSearch
           value={search}
           onChange={setSearch}
-          placeholder="Buscar por SKU, producto o categoría..."
+          placeholder="Buscar por código, producto o categoría..."
         />
         <Button
           type="button"

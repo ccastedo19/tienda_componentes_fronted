@@ -5,7 +5,6 @@ import {
   Unlock,
   AlertTriangle,
   CheckCircle2,
-  DollarSign,
   Clock,
   User,
   HelpCircle,
@@ -46,7 +45,6 @@ export const Apertura_cierre = () => {
       if (err instanceof ApiRequestError && (err.code === "404" || err.code === "NOT_FOUND" || err.message.includes("No hay"))) {
         setCajaActiva(null)
       } else {
-        // Error genérico
         setCajaActiva(null)
       }
     } finally {
@@ -168,11 +166,11 @@ export const Apertura_cierre = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="rounded-lg border border-border p-3">
                 <span className="text-xs text-muted-foreground">Saldo Esperado en Efectivo</span>
-                <p className="text-lg font-bold text-foreground">${resultadoCierre.montoEsperado.toFixed(2)}</p>
+                <p className="text-lg font-bold text-foreground">Bs. {resultadoCierre.montoEsperado.toFixed(2)}</p>
               </div>
               <div className="rounded-lg border border-border p-3">
                 <span className="text-xs text-muted-foreground">Recuento Físico Reportado</span>
-                <p className="text-lg font-bold text-foreground">${(resultadoCierre.recuentoFisico ?? 0).toFixed(2)}</p>
+                <p className="text-lg font-bold text-foreground">Bs. {(resultadoCierre.recuentoFisico ?? 0).toFixed(2)}</p>
               </div>
               <div className="rounded-lg border border-border p-3">
                 <span className="text-xs text-muted-foreground">Diferencia Final</span>
@@ -186,7 +184,7 @@ export const Apertura_cierre = () => {
                   }`}
                 >
                   {resultadoCierre.diferenciaMonto > 0 ? "+" : ""}
-                  ${resultadoCierre.diferenciaMonto.toFixed(2)}
+                  Bs. {resultadoCierre.diferenciaMonto.toFixed(2)}
                 </p>
               </div>
             </div>
@@ -215,9 +213,11 @@ export const Apertura_cierre = () => {
           <form onSubmit={handleAbrirCaja}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="montoInicial">Monto Inicial en Efectivo (Cajón) *</Label>
+                <Label htmlFor="montoInicial">Monto Inicial en Efectivo (Bs.) *</Label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+                    Bs.
+                  </span>
                   <Input
                     id="montoInicial"
                     type="number"
@@ -287,10 +287,12 @@ export const Apertura_cierre = () => {
                 </div>
 
                 <div className="flex items-center gap-2 p-2.5 rounded-lg border border-border bg-background">
-                  <DollarSign className="size-4 text-muted-foreground shrink-0" />
+                  <span className="size-4 text-xs font-bold text-muted-foreground shrink-0 flex items-center justify-center">
+                    Bs
+                  </span>
                   <div>
                     <p className="text-xs text-muted-foreground">Monto Inicial en Efectivo</p>
-                    <p className="font-medium text-foreground">${cajaActiva.montoInicial.toFixed(2)}</p>
+                    <p className="font-medium text-foreground">Bs. {cajaActiva.montoInicial.toFixed(2)}</p>
                   </div>
                 </div>
               </div>
@@ -311,9 +313,11 @@ export const Apertura_cierre = () => {
             <form onSubmit={handleCerrarCaja}>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="recuentoFisico">Recuento Físico en Efectivo (Conteo Ciego) *</Label>
+                  <Label htmlFor="recuentoFisico">Recuento Físico en Efectivo (Bs. Conteo Ciego) *</Label>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+                      Bs.
+                    </span>
                     <Input
                       id="recuentoFisico"
                       type="number"

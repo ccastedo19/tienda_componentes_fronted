@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react"
 import {
-  DollarSign,
   TrendingUp,
   AlertTriangle,
   QrCode,
@@ -114,12 +113,12 @@ export const Inicio = () => {
           <CardHeader className="p-4 pb-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground">Ventas Totales Hoy</span>
-              <DollarSign className="size-4 text-muted-foreground" />
+              <span className="text-xs font-bold text-muted-foreground">Bs</span>
             </div>
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold text-foreground">
-              ${(metrics?.totalVentasHoy ?? 0).toFixed(2)}
+              Bs. {(metrics?.totalVentasHoy ?? 0).toFixed(2)}
             </div>
             <p className="text-[11px] text-muted-foreground mt-1">
               {metrics?.cantidadVentasHoy ?? 0} transacciones cobradas hoy
@@ -131,12 +130,12 @@ export const Inicio = () => {
           <CardHeader className="p-4 pb-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground">Efectivo en Caja</span>
-              <DollarSign className="size-4 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Bs</span>
             </div>
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-              ${(metrics?.totalEfectivoHoy ?? 0).toFixed(2)}
+              Bs. {(metrics?.totalEfectivoHoy ?? 0).toFixed(2)}
             </div>
             <p className="text-[11px] text-muted-foreground mt-1">
               Ingresos físicos en cajón de cobro
@@ -153,7 +152,7 @@ export const Inicio = () => {
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-              ${(metrics?.totalQrHoy ?? 0).toFixed(2)}
+              Bs. {(metrics?.totalQrHoy ?? 0).toFixed(2)}
             </div>
             <p className="text-[11px] text-muted-foreground mt-1">
               Liquidado directo a cuenta bancaria
@@ -202,25 +201,25 @@ export const Inicio = () => {
                   <div className="p-3 rounded-lg border border-border bg-background">
                     <span className="text-muted-foreground">Ingreso Bruto Ventas</span>
                     <p className="text-base font-bold text-foreground mt-1">
-                      ${rentabilidad.ingresoBrutoVentas.toFixed(2)}
+                      Bs. {rentabilidad.ingresoBrutoVentas.toFixed(2)}
                     </p>
                   </div>
                   <div className="p-3 rounded-lg border border-border bg-background">
                     <span className="text-muted-foreground">(-) Costo Adquisición</span>
                     <p className="text-base font-bold text-muted-foreground mt-1">
-                      ${rentabilidad.costoAdquisicionVendidos.toFixed(2)}
+                      Bs. {rentabilidad.costoAdquisicionVendidos.toFixed(2)}
                     </p>
                   </div>
                   <div className="p-3 rounded-lg border border-border bg-background">
                     <span className="text-muted-foreground">(-) Mermas y Pérdidas</span>
                     <p className="text-base font-bold text-destructive mt-1">
-                      ${rentabilidad.valorMermasDeclaradas.toFixed(2)}
+                      Bs. {rentabilidad.valorMermasDeclaradas.toFixed(2)}
                     </p>
                   </div>
                   <div className="p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10">
                     <span className="text-emerald-800 dark:text-emerald-300 font-semibold">(=) Ganancia Neta Real</span>
                     <p className="text-lg font-black text-emerald-700 dark:text-emerald-400 mt-1">
-                      ${rentabilidad.rentabilidadNeta.toFixed(2)}
+                      Bs. {rentabilidad.rentabilidadNeta.toFixed(2)}
                     </p>
                   </div>
                 </div>
@@ -263,7 +262,7 @@ export const Inicio = () => {
                             </td>
                             <td className="p-2 text-center">{p.cantidadVentas}</td>
                             <td className="p-2 text-right font-bold text-foreground">
-                              ${p.volumenBrutoFacturacion.toFixed(2)}
+                              Bs. {p.volumenBrutoFacturacion.toFixed(2)}
                             </td>
                           </tr>
                         ))
@@ -306,9 +305,9 @@ export const Inicio = () => {
                             <td className="p-2 font-medium text-foreground">
                               {pr.proveedorNombre}
                             </td>
-                            <td className="p-2 text-right">${pr.totalComprado.toFixed(2)}</td>
+                            <td className="p-2 text-right">Bs. {pr.totalComprado.toFixed(2)}</td>
                             <td className="p-2 text-right font-semibold text-emerald-600 dark:text-emerald-400">
-                              +${pr.margenGanancia.toFixed(2)}
+                              +Bs. {pr.margenGanancia.toFixed(2)}
                             </td>
                             <td className="p-2 text-center">
                               <Badge variant="outline">{pr.ratioRendimiento.toFixed(2)}x</Badge>
@@ -353,11 +352,11 @@ export const Inicio = () => {
                           <tr key={sm.productoId}>
                             <td className="p-2">
                               <p className="font-medium text-foreground">{sm.nombreComercial}</p>
-                              <p className="text-[10px] text-muted-foreground font-mono">{sm.sku}</p>
+                              <p className="text-[10px] text-muted-foreground font-mono">Código: {sm.sku}</p>
                             </td>
                             <td className="p-2 text-center">{sm.stockActual} un.</td>
                             <td className="p-2 text-right font-bold text-destructive">
-                              ${sm.capitalInmovilizado.toFixed(2)}
+                              Bs. {sm.capitalInmovilizado.toFixed(2)}
                             </td>
                             <td className="p-2 text-center">
                               <Badge variant="destructive">{sm.diasSinMovimiento} d</Badge>
@@ -392,13 +391,13 @@ export const Inicio = () => {
                       <div className="p-2.5 rounded-lg border border-border bg-muted/20">
                         <span className="text-muted-foreground text-[11px]">Ingresos Mano de Obra</span>
                         <p className="text-base font-bold text-foreground mt-0.5">
-                          ${roiTaller.ingresosManoDeObra.toFixed(2)}
+                          Bs. {roiTaller.ingresosManoDeObra.toFixed(2)}
                         </p>
                       </div>
                       <div className="p-2.5 rounded-lg border border-border bg-muted/20">
                         <span className="text-muted-foreground text-[11px]">Costo de Repuestos</span>
                         <p className="text-base font-bold text-muted-foreground mt-0.5">
-                          ${roiTaller.costoRepuestosConsumidos.toFixed(2)}
+                          Bs. {roiTaller.costoRepuestosConsumidos.toFixed(2)}
                         </p>
                       </div>
                     </div>
@@ -409,7 +408,7 @@ export const Inicio = () => {
                           Ganancia Neta del Taller
                         </span>
                         <p className="text-lg font-black text-emerald-700 dark:text-emerald-400">
-                          ${roiTaller.gananciaNetaTaller.toFixed(2)}
+                          Bs. {roiTaller.gananciaNetaTaller.toFixed(2)}
                         </p>
                       </div>
                       <Badge variant="success" className="text-xs">

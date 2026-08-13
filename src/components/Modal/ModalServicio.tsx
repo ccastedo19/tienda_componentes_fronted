@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { DollarSign, Image as ImageIcon, X } from "lucide-react"
+import { Image as ImageIcon, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -163,9 +163,11 @@ export function ModalServicio({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="precio">Precio Base Sugerido ($) *</Label>
+            <Label htmlFor="precio">Precio Base Sugerido (Bs.) *</Label>
             <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+                Bs.
+              </span>
               <Input
                 id="precio"
                 type="number"

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { DollarSign, Image as ImageIcon, X } from "lucide-react"
+import { Image as ImageIcon, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -180,7 +180,7 @@ export function ModalProducto({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="sku">Código SKU Único *</Label>
+              <Label htmlFor="sku">Código Único *</Label>
               <Input
                 id="sku"
                 value={skuUnico}
@@ -233,9 +233,11 @@ export function ModalProducto({
 
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="costo">Precio Costo ($) *</Label>
+              <Label htmlFor="costo">Precio Costo (Bs.) *</Label>
               <div className="relative">
-                <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+                  Bs.
+                </span>
                 <Input
                   id="costo"
                   type="number"
@@ -243,16 +245,18 @@ export function ModalProducto({
                   min="0"
                   value={precioCosto}
                   onChange={(e) => setPrecioCosto(e.target.value)}
-                  className="pl-7"
+                  className="pl-8"
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="venta">Precio Venta ($) *</Label>
+              <Label htmlFor="venta">Precio Venta (Bs.) *</Label>
               <div className="relative">
-                <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+                  Bs.
+                </span>
                 <Input
                   id="venta"
                   type="number"
@@ -260,7 +264,7 @@ export function ModalProducto({
                   min="0"
                   value={precioVenta}
                   onChange={(e) => setPrecioVenta(e.target.value)}
-                  className="pl-7"
+                  className="pl-8"
                   required
                 />
               </div>

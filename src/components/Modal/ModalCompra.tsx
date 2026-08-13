@@ -174,14 +174,14 @@ export function ModalCompra({
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Buscar componente o producto...">
                     {productos.find((p) => p.id === selectedProdId)
-                      ? `${productos.find((p) => p.id === selectedProdId)?.nombreComercial} (SKU: ${productos.find((p) => p.id === selectedProdId)?.skuUnico})`
+                      ? `${productos.find((p) => p.id === selectedProdId)?.nombreComercial} (Código: ${productos.find((p) => p.id === selectedProdId)?.skuUnico})`
                       : undefined}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {productos.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
-                      {p.nombreComercial} (SKU: {p.skuUnico} • Costo actual: ${p.precioCosto.toFixed(2)})
+                      {p.nombreComercial} (Código: {p.skuUnico} • Costo actual: Bs. {p.precioCosto.toFixed(2)})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -198,8 +198,8 @@ export function ModalCompra({
                 <tr>
                   <th className="p-2.5 text-left">Producto</th>
                   <th className="p-2.5 text-center w-24">Cantidad</th>
-                  <th className="p-2.5 text-right w-28">Costo Unit. ($)</th>
-                  <th className="p-2.5 text-right w-28">Subtotal ($)</th>
+                  <th className="p-2.5 text-right w-28">Costo Unit. (Bs.)</th>
+                  <th className="p-2.5 text-right w-28">Subtotal (Bs.)</th>
                   <th className="p-2.5 text-center w-12"></th>
                 </tr>
               </thead>
@@ -218,7 +218,7 @@ export function ModalCompra({
                         <td className="p-2.5">
                           <div className="font-medium text-foreground">{l.nombre}</div>
                           <div className="text-[10px] text-muted-foreground font-mono">
-                            SKU: {l.sku} • Costo anterior: ${l.costoAnterior.toFixed(2)}
+                            Código: {l.sku} • Costo anterior: Bs. {l.costoAnterior.toFixed(2)}
                           </div>
                           {isHigherCost && (
                             <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1 mt-0.5">
@@ -255,7 +255,7 @@ export function ModalCompra({
                           />
                         </td>
                         <td className="p-2.5 text-right font-bold text-foreground">
-                          ${(l.cantidad * l.costoUnitario).toFixed(2)}
+                          Bs. {(l.cantidad * l.costoUnitario).toFixed(2)}
                         </td>
                         <td className="p-2.5 text-center">
                           <Button
@@ -278,7 +278,7 @@ export function ModalCompra({
 
           <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border">
             <span className="font-semibold text-foreground">TOTAL DE COMPRA:</span>
-            <span className="text-lg font-bold text-foreground">${totalCompra.toFixed(2)}</span>
+            <span className="text-lg font-bold text-foreground">Bs. {totalCompra.toFixed(2)}</span>
           </div>
 
           <DialogFooter className="pt-2">

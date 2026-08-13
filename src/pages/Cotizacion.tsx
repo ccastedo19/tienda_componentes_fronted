@@ -77,7 +77,7 @@ export const Cotizacion = () => {
       setError(null)
     } catch {
       setCliente(null)
-      setError("No se encontró ningún cliente con ese CI. Puedes registrarlo con el botón 'Nuevo Cliente'.")
+      setError("No se encontró ningún cliente con ese NIT / Cédula. Puedes registrarlo con el botón 'Nuevo'.")
     }
   }
 
@@ -133,7 +133,7 @@ export const Cotizacion = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!cliente) {
-      setError("SRS-POS-013: Es obligatorio asociar a un cliente registrado con Cédula de Identidad (CI).")
+      setError("SRS-POS-013: Es obligatorio asociar a un cliente registrado con NIT / Cédula.")
       return
     }
     if (lineas.length === 0) {
@@ -184,7 +184,7 @@ export const Cotizacion = () => {
           Emisión de Cotizaciones (Proformas Comerciales)
         </h1>
         <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-          SRS-POS-013 / 014: Genera cotizaciones formales vinculadas a la CI del cliente sin comprometer el stock físico.
+          SRS-POS-013 / 014: Genera cotizaciones formales vinculadas al NIT / Cédula del cliente sin comprometer el stock físico.
         </p>
       </div>
 
@@ -222,13 +222,13 @@ export const Cotizacion = () => {
           <CardHeader className="p-4 pb-2">
             <CardTitle className="text-base">Datos del Cliente y Vigencia</CardTitle>
             <CardDescription>
-              La cotización requiere un cliente formal con CI para garantizar trazabilidad.
+              La cotización requiere un cliente formal con NIT / Cédula para garantizar trazabilidad.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4 pt-2 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="ci">Cédula de Identidad (CI) del Cliente *</Label>
+                <Label htmlFor="ci">NIT / Cédula del Cliente *</Label>
                 <div className="flex items-center gap-2">
                   <Input
                     id="ci"
@@ -254,13 +254,13 @@ export const Cotizacion = () => {
                 {cliente ? (
                   <div className="p-2.5 rounded-md bg-muted/40 border border-border text-xs flex items-center justify-between mt-2">
                     <span className="font-medium text-foreground">
-                      {cliente.nombre} {cliente.apellido} • Tel: {cliente.telefono}
+                      {cliente.nombre} {cliente.apellido} • Tel: {cliente.telefono || "-"}
                     </span>
                     <Badge variant="success">Cliente Identificado</Badge>
                   </div>
                 ) : (
                   <p className="text-xs text-muted-foreground mt-1">
-                    * Ingresa la CI y haz clic en Buscar para asociar el cliente.
+                    * Ingresa el NIT / Cédula y haz clic en Buscar para asociar el cliente.
                   </p>
                 )}
               </div>
@@ -305,7 +305,7 @@ export const Cotizacion = () => {
                     <SelectContent>
                       {productos.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
-                          {p.nombreComercial} (${p.precioVenta.toFixed(2)})
+                          {p.nombreComercial} (Bs. {p.precioVenta.toFixed(2)})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -328,7 +328,7 @@ export const Cotizacion = () => {
                     <SelectContent>
                       {servicios.map((s) => (
                         <SelectItem key={s.id} value={s.id}>
-                          {s.nombre} (${s.precioBaseSugerido.toFixed(2)})
+                          {s.nombre} (Bs. {s.precioBaseSugerido.toFixed(2)})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -346,8 +346,8 @@ export const Cotizacion = () => {
                   <tr>
                     <th className="p-2.5 text-left">Ítem / Descripción</th>
                     <th className="p-2.5 text-center w-24">Cant.</th>
-                    <th className="p-2.5 text-right w-28">P. Cotizado ($)</th>
-                    <th className="p-2.5 text-right w-28">Subtotal ($)</th>
+                    <th className="p-2.5 text-right w-28">P. Cotizado (Bs.)</th>
+                    <th className="p-2.5 text-right w-28">Subtotal (Bs.)</th>
                     <th className="p-2.5 text-center w-12"></th>
                   </tr>
                 </thead>
@@ -364,7 +364,7 @@ export const Cotizacion = () => {
                         <td className="p-2.5">
                           <div className="font-medium text-foreground">{l.nombre}</div>
                           <span className="text-[10px] text-muted-foreground">
-                            {l.tipo === "producto" ? `SKU: ${l.sku}` : "Mano de Obra"}
+                            {l.tipo === "producto" ? `Código: ${l.sku}` : "Mano de Obra"}
                           </span>
                         </td>
                         <td className="p-2.5 text-center">
@@ -395,7 +395,7 @@ export const Cotizacion = () => {
                           />
                         </td>
                         <td className="p-2.5 text-right font-bold text-foreground">
-                          ${(l.cantidad * l.precioCotizado).toFixed(2)}
+                          Bs. {(l.cantidad * l.precioCotizado).toFixed(2)}
                         </td>
                         <td className="p-2.5 text-center">
                           <Button
@@ -417,7 +417,7 @@ export const Cotizacion = () => {
 
             <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border">
               <span className="font-semibold text-foreground">TOTAL ESTIMADO:</span>
-              <span className="text-lg font-bold text-foreground">${totalEstimado.toFixed(2)}</span>
+              <span className="text-lg font-bold text-foreground">Bs. {totalEstimado.toFixed(2)}</span>
             </div>
           </CardContent>
           <CardFooter className="p-4 pt-0">
