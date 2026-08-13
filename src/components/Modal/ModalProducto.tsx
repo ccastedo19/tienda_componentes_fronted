@@ -194,7 +194,9 @@ export function ModalProducto({
               <Label htmlFor="categoria">Categoría *</Label>
               <Select value={categoriaId} onValueChange={(val) => setCategoriaId(val ?? "")}>
                 <SelectTrigger id="categoria" className="w-full">
-                  <SelectValue placeholder="Selecciona categoría" />
+                  <SelectValue placeholder="Selecciona categoría">
+                    {categorias.find((c) => c.id === categoriaId)?.nombre}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {categorias.map((c) => (

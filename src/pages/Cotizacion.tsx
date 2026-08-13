@@ -298,7 +298,9 @@ export const Cotizacion = () => {
                 <div className="flex items-center gap-2">
                   <Select value={selectedProdId} onValueChange={(val) => setSelectedProdId(val ?? "")}>
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Seleccionar producto..." />
+                      <SelectValue placeholder="Seleccionar producto...">
+                        {productos.find((p) => p.id === selectedProdId)?.nombreComercial}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {productos.map((p) => (
@@ -319,7 +321,9 @@ export const Cotizacion = () => {
                 <div className="flex items-center gap-2">
                   <Select value={selectedServId} onValueChange={(val) => setSelectedServId(val ?? "")}>
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Seleccionar servicio..." />
+                      <SelectValue placeholder="Seleccionar servicio...">
+                        {servicios.find((s) => s.id === selectedServId)?.nombre}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {servicios.map((s) => (

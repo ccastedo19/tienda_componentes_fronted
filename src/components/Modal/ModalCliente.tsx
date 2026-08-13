@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { ShieldAlert } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -12,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ApiRequestError } from "@/lib/api/client"
-import { createCliente } from "@/services/cliente.service"
+import { createCliente, updateCliente } from "@/services/cliente.service"
 import type { Cliente } from "@/types/cliente"
 
 type ModalClienteMode = "create" | "edit"
@@ -59,8 +60,8 @@ function validate(values: FormValues): FormErrors {
   }
 
   const telefono = values.telefono.trim()
-  if (telefono && telefono.length < 8) {
-    errors.telefono = "El teléfono debe tener al menos 8 caracteres"
+  if (telefono && telefono.length < 7) {
+    errors.telefono = "El teléfono debe tener al menos 7 caracteres"
   }
 
   return errors
@@ -86,11 +87,11 @@ export function ModalCliente({
 
     if (isEdit && cliente) {
       setValues({
-        ci: cliente.ci,
-        nombre: cliente.nombre,
-        apellido: cliente.apellido,
-        telefono: cliente.telefono,
-        email: cliente.email,
+        ci: cliente.ci || "",
+        nombre: cliente.nombre || "",
+        apellido: cliente.apellido || "",
+        telefono: cliente.telefono || "",
+        email: cliente.email || "",
       })
     } else {
       setValues(EMPTY_FORM)
@@ -119,30 +120,35 @@ export function ModalCliente({
       return
     }
 
-    if (isEdit) {
-      setErrors({
-        api: "La edición de clientes aún no está disponible.",
-      })
-      return
-    }
-
     setIsSubmitting(true)
 
     try {
-      const created = await createCliente({
-        ci: values.ci.trim(),
-        nombre: values.nombre.trim(),
-        apellido: values.apellido.trim(),
-        telefono: values.telefono.trim(),
-        email: values.email.trim(),
-      })
-
-      onSuccess?.(created)
+      if (isEdit && cliente) {
+        const updated = await updateCliente(cliente.id, {
+          ci: values.ci.trim(),
+          nombre: values.nombre.trim(),
+          apellido: values.apellido.trim(),
+          telefono: values.telefono.trim(),
+          email: values.email.trim().toLowerCase(),
+        })
+        onSuccess?.(updated)
+      } else {
+        const created = await createCliente({
+          ci: values.ci.trim(),
+          nombre: values.nombre.trim(),
+          apellido: values.apellido.trim(),
+          telefono: values.telefono.trim(),
+          email: values.email.trim().toLowerCase(),
+        })
+        onSuccess?.(created)
+      }
       onOpenChange(false)
     } catch (error) {
       const message =
         error instanceof ApiRequestError
           ? error.message
+          : isEdit
+          ? "No se pudo actualizar el cliente. Intenta nuevamente."
           : "No se pudo crear el cliente. Intenta nuevamente."
 
       setErrors({ api: message })
@@ -156,106 +162,90 @@ export function ModalCliente({
       <DialogContent className="sm:max-w-md" showCloseButton>
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? "Editar cliente" : "Nuevo cliente"}
+            {isEdit ? "Editar Cliente" : "Nuevo Cliente"}
           </DialogTitle>
           <DialogDescription>
             {isEdit
               ? "Actualiza los datos del cliente seleccionado."
-              : "Completa los datos para registrar un nuevo cliente."}
+              : "Completa los datos para registrar un nuevo cliente en el sistema."}
           </DialogDescription>
         </DialogHeader>
 
-        <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-          {errors.api ? (
-            <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {errors.api}
-            </p>
-          ) : null}
+        {errors.api && (
+          <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+            <ShieldAlert className="size-4 shrink-0" />
+            <span>{errors.api}</span>
+          </div>
+        )}
 
-          <div className="space-y-2">
-            <Label className="mb-1.5" htmlFor="cliente-ci">CI</Label>
+        <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+          <div className="space-y-1.5">
+            <Label htmlFor="cliente-ci">Cédula de Identidad (CI) *</Label>
             <Input
-              className="mb-1"
               id="cliente-ci"
               name="ci"
               value={values.ci}
-              aria-invalid={!!errors.ci}
-              placeholder="Ej. 8654153"
+              placeholder="Ej: 8654153"
               onChange={(event) => updateField("ci", event.target.value)}
+              required
             />
-            {errors.ci ? (
-              <p className="text-sm text-destructive">{errors.ci}</p>
-            ) : null}
+            {errors.ci && <p className="text-xs text-destructive">{errors.ci}</p>}
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label className="mb-1.5" htmlFor="cliente-nombre">Nombre</Label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="cliente-nombre">Nombre *</Label>
               <Input
-                className="mb-1"
                 id="cliente-nombre"
                 name="nombre"
                 value={values.nombre}
-                aria-invalid={!!errors.nombre}
                 placeholder="Nombre"
                 onChange={(event) => updateField("nombre", event.target.value)}
+                required
               />
-              {errors.nombre ? (
-                <p className="text-sm text-destructive">{errors.nombre}</p>
-              ) : null}
+              {errors.nombre && <p className="text-xs text-destructive">{errors.nombre}</p>}
             </div>
 
-            <div className="space-y-2">
-              <Label className="mb-1.5" htmlFor="cliente-apellido">Apellido</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="cliente-apellido">Apellido *</Label>
               <Input
-                className="mb-1"
                 id="cliente-apellido"
                 name="apellido"
                 value={values.apellido}
-                aria-invalid={!!errors.apellido}
                 placeholder="Apellido"
-                onChange={(event) =>
-                  updateField("apellido", event.target.value)
-                }
+                onChange={(event) => updateField("apellido", event.target.value)}
+                required
               />
-              {errors.apellido ? (
-                <p className="text-sm text-destructive">{errors.apellido}</p>
-              ) : null}
+              {errors.apellido && <p className="text-xs text-destructive">{errors.apellido}</p>}
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label className="mb-1.5" htmlFor="cliente-telefono">Teléfono</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="cliente-telefono">Teléfono</Label>
             <Input
               id="cliente-telefono"
               name="telefono"
               value={values.telefono}
-              aria-invalid={!!errors.telefono}
-              placeholder="Opcional"
+              placeholder="Ej: 71234567"
               onChange={(event) => updateField("telefono", event.target.value)}
             />
-            {errors.telefono ? (
-              <p className="text-sm text-destructive">{errors.telefono}</p>
-            ) : null}
+            {errors.telefono && <p className="text-xs text-destructive">{errors.telefono}</p>}
           </div>
 
-          <div className="space-y-2">
-            <Label className="mb-1.5" htmlFor="cliente-email">Correo</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="cliente-email">Correo Electrónico</Label>
             <Input
               id="cliente-email"
               name="email"
               type="email"
               value={values.email}
-              aria-invalid={!!errors.email}
-              placeholder="Opcional"
+              placeholder="cliente@ejemplo.com"
               onChange={(event) => updateField("email", event.target.value)}
             />
-            {errors.email ? (
-              <p className="text-sm text-destructive">{errors.email}</p>
-            ) : null}
+            {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
           </div>
 
-          <DialogFooter className="pt-2 pb-2">
+          <DialogFooter className="pt-2">
             <Button
               className="cursor-pointer"
               type="button"
@@ -271,8 +261,8 @@ export function ModalCliente({
                   ? "Guardando..."
                   : "Creando..."
                 : isEdit
-                  ? "Guardar cambios"
-                  : "Crear cliente"}
+                ? "Guardar Cambios"
+                : "Crear Cliente"}
             </Button>
           </DialogFooter>
         </form>

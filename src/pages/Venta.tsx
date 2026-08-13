@@ -522,7 +522,7 @@ export const Venta = () => {
         <p className="text-sm text-muted-foreground">
           SRS-CAJ-001: El sistema bloquea las operaciones de cobro en el POS hasta que inicies una sesión de caja en estado 'Abierta'.
         </p>
-        <Button render={<Link to="/apertura-cierre" />} className="cursor-pointer">
+        <Button nativeButton={false} render={<Link to="/apertura-cierre" />} className="cursor-pointer">
           Ir a Apertura de Caja
         </Button>
       </div>

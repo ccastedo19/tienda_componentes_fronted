@@ -214,7 +214,9 @@ export function ModalMerma({
               <div className="flex items-center gap-2">
                 <Select value={selectedProdId} onValueChange={(val) => setSelectedProdId(val ?? "")}>
                   <SelectTrigger className="w-full text-xs">
-                    <SelectValue placeholder="Seleccionar producto del inventario..." />
+                    <SelectValue placeholder="Seleccionar producto del inventario...">
+                      {productos.find((p) => p.id === selectedProdId)?.nombreComercial}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {productos

@@ -153,7 +153,9 @@ export function ModalCompra({
             <Label htmlFor="prov">Proveedor Activo (SRS-PRO-002) *</Label>
             <Select value={proveedorId} onValueChange={(val) => setProveedorId(val ?? "")}>
               <SelectTrigger id="prov" className="w-full">
-                <SelectValue placeholder="Selecciona proveedor activo" />
+                <SelectValue placeholder="Selecciona proveedor activo">
+                  {proveedoresActivos.find((p) => p.id === proveedorId)?.nombreProveedor}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {proveedoresActivos.map((p) => (
@@ -170,7 +172,11 @@ export function ModalCompra({
             <div className="flex items-center gap-2">
               <Select value={selectedProdId} onValueChange={(val) => setSelectedProdId(val ?? "")}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Buscar componente o producto..." />
+                  <SelectValue placeholder="Buscar componente o producto...">
+                    {productos.find((p) => p.id === selectedProdId)
+                      ? `${productos.find((p) => p.id === selectedProdId)?.nombreComercial} (SKU: ${productos.find((p) => p.id === selectedProdId)?.skuUnico})`
+                      : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {productos.map((p) => (

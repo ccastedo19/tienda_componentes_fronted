@@ -218,7 +218,13 @@ export function ModalOrdenTecnica({
             <Label htmlFor="tecnico">Técnico Responsable</Label>
             <Select value={tecnicoId} onValueChange={(val) => setTecnicoId(val ?? "none")}>
               <SelectTrigger id="tecnico" className="w-full">
-                <SelectValue placeholder="Selecciona un técnico (opcional)" />
+                <SelectValue placeholder="Selecciona un técnico (opcional)">
+                  {tecnicoId === "none"
+                    ? "-- Sin asignar --"
+                    : tecnicos.find((t) => t.id === tecnicoId)
+                      ? `${tecnicos.find((t) => t.id === tecnicoId)?.nombre} ${tecnicos.find((t) => t.id === tecnicoId)?.apellido}`
+                      : undefined}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">-- Sin asignar --</SelectItem>
@@ -238,7 +244,7 @@ export function ModalOrdenTecnica({
               id="diag"
               value={diagnostico}
               onChange={(e) => setDiagnostico(e.target.value)}
-              placeholder="Ej: Falla en regulador de voltaje, pantalla no enciende, etc."
+              placeholder="Describe la falla reportada por el cliente..."
               rows={2}
             />
           </div>
@@ -249,7 +255,9 @@ export function ModalOrdenTecnica({
             <div className="flex items-center gap-2">
               <Select value={selectedProdId} onValueChange={(val) => setSelectedProdId(val ?? "")}>
                 <SelectTrigger className="w-full text-xs">
-                  <SelectValue placeholder="Seleccionar repuesto del inventario..." />
+                  <SelectValue placeholder="Seleccionar repuesto del inventario...">
+                    {productos.find((p) => p.id === selectedProdId)?.nombreComercial}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {productos
@@ -294,7 +302,9 @@ export function ModalOrdenTecnica({
             <div className="flex items-center gap-2">
               <Select value={selectedServId} onValueChange={(val) => setSelectedServId(val ?? "")}>
                 <SelectTrigger className="w-full text-xs">
-                  <SelectValue placeholder="Seleccionar servicio de mano de obra..." />
+                  <SelectValue placeholder="Seleccionar servicio de mano de obra...">
+                    {servicios.find((s) => s.id === selectedServId)?.nombre}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {servicios.map((s) => (

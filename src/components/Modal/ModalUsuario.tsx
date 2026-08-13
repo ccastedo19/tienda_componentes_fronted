@@ -102,6 +102,7 @@ export function ModalUsuario({
         const actualizado = await updateUser(usuario.id, {
           nombre: nombre.trim(),
           apellido: apellido.trim(),
+          email: email.trim().toLowerCase(),
           rol,
         })
         onSuccess(actualizado)
@@ -168,16 +169,17 @@ export function ModalUsuario({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="juan.perez@empresa.com"
-              disabled={mode === "edit"}
               required
             />
           </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="rol">Rol Asignado *</Label>
-            <Select value={rol} onValueChange={(val) => setRol(val as "Administrador" | "Vendedor")}>
+            <Select value={rol} onValueChange={(val) => setRol((val ?? "Vendedor") as "Administrador" | "Vendedor")}>
               <SelectTrigger id="rol" className="w-full">
-                <SelectValue placeholder="Selecciona un rol" />
+                <SelectValue placeholder="Selecciona un rol">
+                  {rol === "Administrador" ? "Administrador (Control Total)" : "Vendedor (POS y Consultas)"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Vendedor">Vendedor (POS y Consultas)</SelectItem>

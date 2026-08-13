@@ -128,7 +128,11 @@ export function ModalCategoria({
             <Label htmlFor="padre">Categoría Padre (Opcional para Jerarquía SRS-CAT-007)</Label>
             <Select value={categoriaPadreId} onValueChange={(val) => setCategoriaPadreId(val ?? "none")}>
               <SelectTrigger id="padre" className="w-full">
-                <SelectValue placeholder="Sin categoría padre (Categoría Principal)" />
+                <SelectValue placeholder="Sin categoría padre (Categoría Principal)">
+                  {categoriaPadreId === "none"
+                    ? "-- Ninguna (Categoría Principal) --"
+                    : categoriasFiltradas.find((c) => c.id === categoriaPadreId)?.nombre}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">-- Ninguna (Categoría Principal) --</SelectItem>

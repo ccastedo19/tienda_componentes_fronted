@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
-import { Plus, UserCheck, UserX, Trash2, Edit2, ShieldAlert } from "lucide-react"
+import {
+  Plus,
+  UserCheck,
+  UserX,
+  Trash2,
+  Edit2,
+  ShieldAlert,
+  Users,
+  Eye,
+  EyeOff,
+} from "lucide-react"
 
 import { DataTable } from "@/components/data-table/data-table"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
@@ -17,6 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useAuth } from "@/hooks/use-auth"
 import { ApiRequestError } from "@/lib/api/client"
 import {
   getUsers,
@@ -26,8 +37,11 @@ import {
 import type { Usuario } from "@/types/usuario"
 
 export const Usuarios = () => {
+  const { user: currentUser } = useAuth()
+
   const [search, setSearch] = useState("")
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
+  const [incluirEliminados, setIncluirEliminados] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -46,6 +60,7 @@ export const Usuarios = () => {
     setError(null)
 
     try {
+      // Cargar todos los usuarios para calcular los KPIs reales
       const data = await getUsers(undefined, true)
       setUsuarios(data)
     } catch (err) {
@@ -77,6 +92,11 @@ export const Usuarios = () => {
   }
 
   const handleToggleStatus = async (usuario: Usuario) => {
+    if (usuario.id === currentUser?.id) {
+      alert("No puedes desactivar o suspender tu propia cuenta.")
+      return
+    }
+
     const nuevoEstado = usuario.estado === 1 ? 2 : 1
     try {
       const updated = await changeUserStatus(usuario.id, nuevoEstado)
@@ -86,12 +106,33 @@ export const Usuarios = () => {
     } catch (err) {
       const message =
         err instanceof ApiRequestError ? err.message : "Error al cambiar estado del usuario."
-      setError(message)
+      alert(message)
+    }
+  }
+
+  const handleReactivar = async (usuario: Usuario) => {
+    try {
+      const updated = await changeUserStatus(usuario.id, 1)
+      setUsuarios((prev) =>
+        prev.map((u) => (u.id === usuario.id ? { ...u, estado: updated.estado } : u))
+      )
+    } catch (err) {
+      const message =
+        err instanceof ApiRequestError ? err.message : "Error al reactivar el usuario."
+      alert(message)
     }
   }
 
   const handleConfirmDelete = async () => {
     if (!userToDelete) return
+
+    if (userToDelete.id === currentUser?.id) {
+      alert("No puedes dar de baja o eliminar tu propia cuenta de usuario.")
+      setIsDeleteDialogOpen(false)
+      setUserToDelete(null)
+      return
+    }
+
     setIsDeleting(true)
 
     try {
@@ -104,11 +145,26 @@ export const Usuarios = () => {
     } catch (err) {
       const message =
         err instanceof ApiRequestError ? err.message : "Error al desactivar el usuario."
-      setError(message)
+      alert(message)
     } finally {
       setIsDeleting(false)
     }
   }
+
+  const filteredUsuarios = useMemo(() => {
+    if (incluirEliminados) {
+      return usuarios
+    }
+    return usuarios.filter((u) => u.estado !== 0)
+  }, [usuarios, incluirEliminados])
+
+  const stats = useMemo(() => {
+    const total = usuarios.length
+    const activos = usuarios.filter((u) => u.estado === 1).length
+    const inactivos = usuarios.filter((u) => u.estado === 2).length
+    const eliminados = usuarios.filter((u) => u.estado === 0).length
+    return { total, activos, inactivos, eliminados }
+  }, [usuarios])
 
   const columns = useMemo<ColumnDef<Usuario, unknown>[]>(
     () => [
@@ -123,12 +179,22 @@ export const Usuarios = () => {
       },
       {
         accessorKey: "nombre",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Nombre" />,
-        cell: ({ row }) => (
-          <div className="font-medium text-foreground">
-            {row.original.nombre} {row.original.apellido}
-          </div>
-        ),
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Nombre Completo" />,
+        cell: ({ row }) => {
+          const isSelf = row.original.id === currentUser?.id
+          return (
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-foreground">
+                {row.original.nombre} {row.original.apellido}
+              </span>
+              {isSelf && (
+                <Badge variant="outline" className="text-[10px] text-blue-600 dark:text-blue-400">
+                  Tú (Sesión actual)
+                </Badge>
+              )}
+            </div>
+          )
+        },
       },
       {
         accessorKey: "email",
@@ -162,6 +228,7 @@ export const Usuarios = () => {
         cell: ({ row }) => {
           const u = row.original
           const isEliminado = u.estado === 0
+          const isSelf = u.id === currentUser?.id
 
           return (
             <div className="flex items-center gap-1.5">
@@ -176,52 +243,121 @@ export const Usuarios = () => {
                 <Edit2 className="size-3.5" />
               </Button>
 
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => void handleToggleStatus(u)}
-                disabled={isEliminado}
-                title={u.estado === 1 ? "Desactivar temporalmente" : "Activar usuario"}
-              >
-                {u.estado === 1 ? (
-                  <UserX className="size-3.5 text-amber-600 dark:text-amber-400" />
-                ) : (
-                  <UserCheck className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                )}
-              </Button>
+              {/* Si es el usuario autenticado, no puede desactivarse ni darse de baja a sí mismo */}
+              {!isSelf ? (
+                <>
+                  {!isEliminado ? (
+                    <>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        onClick={() => void handleToggleStatus(u)}
+                        title={u.estado === 1 ? "Desactivar temporalmente" : "Activar usuario"}
+                      >
+                        {u.estado === 1 ? (
+                          <UserX className="size-3.5 text-amber-600 dark:text-amber-400" />
+                        ) : (
+                          <UserCheck className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                        )}
+                      </Button>
 
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => {
-                  setUserToDelete(u)
-                  setIsDeleteDialogOpen(true)
-                }}
-                disabled={isEliminado}
-                title="Dar de baja lógica"
-                className="text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 className="size-3.5" />
-              </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        onClick={() => {
+                          setUserToDelete(u)
+                          setIsDeleteDialogOpen(true)
+                        }}
+                        title="Dar de baja lógica"
+                        className="text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => void handleReactivar(u)}
+                      className="text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                      title="Reactivar usuario"
+                    >
+                      <UserCheck className="size-3.5" />
+                    </Button>
+                  )}
+                </>
+              ) : null}
             </div>
           )
         },
       },
     ],
-    []
+    [currentUser?.id]
   )
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-          Gestión de Personal y Usuarios
-        </h1>
-        <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-          Administra las cuentas del personal, roles (Administrador / Vendedor) y estados de acceso.
-        </p>
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl flex items-center gap-2">
+            <Users className="size-6" />
+            Gestión de Personal y Usuarios
+          </h1>
+          <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+            Administra las cuentas del personal, roles (Administrador / Vendedor) y estados de acceso.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setIncluirEliminados(!incluirEliminados)}
+            className="gap-1 text-xs"
+          >
+            {incluirEliminados ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+            {incluirEliminados ? "Ocultar Eliminados" : "Ver Eliminados"}
+          </Button>
+
+          <Button
+            type="button"
+            className="cursor-pointer gap-1"
+            onClick={handleOpenCreate}
+          >
+            <Plus className="size-4" />
+            Nuevo Usuario
+          </Button>
+        </div>
+      </div>
+
+      {/* KPI Cards de Personal */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="rounded-lg border border-border bg-card p-3 shadow-xs">
+          <span className="text-xs text-muted-foreground">Total Cuentas</span>
+          <p className="text-lg font-bold text-foreground mt-0.5">{stats.total}</p>
+        </div>
+        <div className="rounded-lg border border-border bg-card p-3 shadow-xs">
+          <span className="text-xs text-muted-foreground">Personal Activo</span>
+          <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+            {stats.activos}
+          </p>
+        </div>
+        <div className="rounded-lg border border-border bg-card p-3 shadow-xs">
+          <span className="text-xs text-muted-foreground">Personal Inactivo</span>
+          <p className="text-lg font-bold text-amber-600 dark:text-amber-400 mt-0.5">
+            {stats.inactivos}
+          </p>
+        </div>
+        <div className="rounded-lg border border-border bg-card p-3 shadow-xs">
+          <span className="text-xs text-muted-foreground">Dados de Baja</span>
+          <p className="text-lg font-bold text-destructive mt-0.5">
+            {stats.eliminados}
+          </p>
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -230,14 +366,12 @@ export const Usuarios = () => {
           onChange={setSearch}
           placeholder="Buscar personal por nombre o correo..."
         />
-
         <Button
           type="button"
-          className="w-full sm:w-auto cursor-pointer"
-          onClick={handleOpenCreate}
+          variant="outline"
+          onClick={() => void loadUsuarios()}
         >
-          <Plus className="size-4" />
-          Nuevo Usuario
+          Actualizar
         </Button>
       </div>
 
@@ -246,7 +380,13 @@ export const Usuarios = () => {
         onOpenChange={setIsModalOpen}
         mode={modalMode}
         usuario={selectedUsuario}
-        onSuccess={() => void loadUsuarios()}
+        onSuccess={(u) => {
+          if (modalMode === "create") {
+            setUsuarios((prev) => [u, ...prev])
+          } else {
+            setUsuarios((prev) => prev.map((item) => (item.id === u.id ? u : item)))
+          }
+        }}
       />
 
       {/* Modal Confirmar Baja Lógica (SRS-SEC-008) */}
@@ -312,7 +452,7 @@ export const Usuarios = () => {
       ) : (
         <DataTable
           columns={columns}
-          data={usuarios}
+          data={filteredUsuarios}
           searchValue={search}
           searchKeys={["nombre", "apellido", "email", "rol"]}
           emptyMessage="No se encontraron usuarios registrados."

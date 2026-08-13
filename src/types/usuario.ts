@@ -20,6 +20,7 @@ export type CreateUsuarioRequest = {
 export type UpdateUsuarioRequest = {
   nombre?: string
   apellido?: string
+  email?: string
   rol?: "Administrador" | "Vendedor"
   estado?: number
 }

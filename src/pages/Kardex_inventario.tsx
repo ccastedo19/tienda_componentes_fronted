@@ -250,7 +250,9 @@ export const Kardex_inventario = () => {
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <Select value={selectedProdId} onValueChange={(val) => setSelectedProdId(val ?? "")}>
                   <SelectTrigger className="w-full sm:w-96">
-                    <SelectValue placeholder="Selecciona un producto..." />
+                    <SelectValue placeholder="Selecciona un producto...">
+                      {selectedProduct ? `${selectedProduct.nombreComercial} (SKU: ${selectedProduct.skuUnico})` : undefined}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {productos.map((p) => (

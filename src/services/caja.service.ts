@@ -1,10 +1,14 @@
 import { apiRequest } from "@/lib/api/client"
 import type { AperturaCajaRequest, Caja, CierreCajaRequest } from "@/types/caja"
 
-export async function getCajaActiva(): Promise<Caja> {
-  return apiRequest<Caja>("/caja/activa", {
-    method: "GET",
-  })
+export async function getCajaActiva(): Promise<Caja | null> {
+  try {
+    return await apiRequest<Caja>("/caja/activa", {
+      method: "GET",
+    })
+  } catch {
+    return null
+  }
 }
 
 export async function abrirCaja(payload: AperturaCajaRequest): Promise<Caja> {
