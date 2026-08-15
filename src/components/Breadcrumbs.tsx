@@ -19,32 +19,20 @@ const routes: Record<
   "/inicio": {
     title: "Inicio",
   },
-  "/usuarios": {
-    title: "Usuarios",
-    parent: "Directorios",
-  },
-  "/clientes": {
-    title: "Clientes",
-    parent: "Directorios",
-  },
-  "/existencias": {
-    title: "Existencias",
-    parent: "Operaciones",
-  },
   "/venta": {
-    title: "Venta",
-    parent: "Operaciones",
-  },
-  "/compra": {
-    title: "Compra",
+    title: "Ventas",
     parent: "Operaciones",
   },
   "/cotizacion": {
-    title: "Cotizacion",
+    title: "Cotización",
+    parent: "Operaciones",
+  },
+  "/compra": {
+    title: "Compras",
     parent: "Operaciones",
   },
   "/recepciones": {
-    title: "Recepciones",
+    title: "Taller / Recepciones",
     parent: "Operaciones",
   },
   "/devoluciones": {
@@ -52,48 +40,60 @@ const routes: Record<
     parent: "Operaciones",
   },
   "/apertura-cierre": {
-    title: "Apertura/Cierre",
+    title: "Apertura / Cierre",
     parent: "Caja",
   },
   "/historial-caja": {
-    title: "Historial Caja",
+    title: "Historial de Arqueos",
     parent: "Caja",
   },
-  "/reporte-ventas": {
-    title: "Reporte de Ventas",
-    parent: "Analisis y Reportes",
-  },
-  "/reporte-cotizaciones": {
-    title: "Reporte de Cotizaciones",
-    parent: "Analisis y Reportes",
-  },
-  "/kardex-inventario": {
-    title: "Kardex de Inventario",
-    parent: "Analisis y Reportes",
+  "/existencias": {
+    title: "Existencias (Stock)",
+    parent: "Inventario",
   },
   "/productos": {
     title: "Productos",
-    parent: "Mantenimiento",
-  },
-  "/servicios": {
-    title: "Servicios",
-    parent: "Mantenimiento",
+    parent: "Inventario",
   },
   "/categorias": {
     title: "Categorías",
-    parent: "Mantenimiento",
+    parent: "Inventario",
+  },
+  "/servicios": {
+    title: "Servicios",
+    parent: "Inventario",
+  },
+  "/clientes": {
+    title: "Clientes",
+    parent: "Contactos",
   },
   "/proveedores": {
     title: "Proveedores",
-    parent: "Mantenimiento",
+    parent: "Contactos",
+  },
+  "/reporte-ventas": {
+    title: "Reporte de Ventas",
+    parent: "Análisis y Reportes",
+  },
+  "/reporte-cotizaciones": {
+    title: "Reporte de Cotizaciones",
+    parent: "Análisis y Reportes",
+  },
+  "/kardex-inventario": {
+    title: "Kardex y Mermas",
+    parent: "Análisis y Reportes",
+  },
+  "/usuarios": {
+    title: "Usuarios",
+    parent: "Sistema",
   },
   "/datos-empresa": {
     title: "Datos de Empresa",
-    parent: "Configuración",
+    parent: "Sistema",
   },
   "/backup": {
-    title: "Backup",
-    parent: "Configuración",
+    title: "Auditoría & Backup",
+    parent: "Sistema",
   },
 };
 
