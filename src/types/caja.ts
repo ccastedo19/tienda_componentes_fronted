@@ -2,6 +2,8 @@ export type Caja = {
   id: string
   usuarioId: string
   usuarioNombre: string
+  usuarioCierreId?: string | null
+  usuarioCierreNombre?: string | null
   fechaHoraApertura: string
   fechaHoraCierre: string | null
   montoInicial: number

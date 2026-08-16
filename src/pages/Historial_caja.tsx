@@ -55,8 +55,27 @@ export const Historial_caja = () => {
       },
       {
         accessorKey: "usuarioNombre",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Operador" />,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Apertura Por" />,
         cell: ({ row }) => <span className="font-medium text-foreground">{row.original.usuarioNombre}</span>,
+      },
+      {
+        id: "usuarioCierreNombre",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Cierre Por" />,
+        cell: ({ row }) => {
+          const cierreNombre = row.original.usuarioCierreNombre
+          if (!row.original.fechaHoraCierre) {
+            return <span className="text-xs text-muted-foreground italic">En curso</span>
+          }
+          if (!cierreNombre || cierreNombre === row.original.usuarioNombre) {
+            return <span className="text-xs text-muted-foreground">{row.original.usuarioNombre}</span>
+          }
+          return (
+            <div className="flex flex-col text-xs">
+              <span className="font-medium text-primary">{cierreNombre}</span>
+              <span className="text-[10px] text-muted-foreground">(Administrador)</span>
+            </div>
+          )
+        },
       },
       {
         accessorKey: "fechaHoraApertura",

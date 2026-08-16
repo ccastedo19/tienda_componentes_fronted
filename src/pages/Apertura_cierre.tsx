@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Clock,
   User,
+  ShieldAlert,
   HelpCircle,
 } from "lucide-react"
 
@@ -35,6 +36,11 @@ export const Apertura_cierre = () => {
   const [recuentoFisico, setRecuentoFisico] = useState<string>("")
   const [resultadoCierre, setResultadoCierre] = useState<Caja | null>(null)
 
+  const esAdmin =
+    user?.rol?.toUpperCase() === "ADMINISTRADOR" || user?.rol?.toUpperCase() === "ADMIN"
+  const esCreadorCaja = Boolean(cajaActiva && user?.id === cajaActiva.usuarioId)
+  const puedeCerrar = esAdmin || esCreadorCaja
+
   const loadCajaActiva = async () => {
     setIsLoading(true)
     setError(null)
@@ -42,7 +48,10 @@ export const Apertura_cierre = () => {
       const data = await getCajaActiva()
       setCajaActiva(data)
     } catch (err) {
-      if (err instanceof ApiRequestError && (err.code === "404" || err.code === "NOT_FOUND" || err.message.includes("No hay"))) {
+      if (
+        err instanceof ApiRequestError &&
+        (err.code === "404" || err.code === "NOT_FOUND" || err.message.includes("No hay"))
+      ) {
         setCajaActiva(null)
       } else {
         setCajaActiva(null)
@@ -121,7 +130,7 @@ export const Apertura_cierre = () => {
           Gestión de Cajas y Arqueo Diario
         </h1>
         <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-          Control de apertura de sesión de cajón, arqueo de recuento a ciegas y cuadre financiero.
+          Control centralizado de apertura de caja única, arqueo de recuento a ciegas y cierre supervisado por el Administrador.
         </p>
       </div>
 
@@ -159,7 +168,13 @@ export const Apertura_cierre = () => {
               </Badge>
             </div>
             <CardDescription>
-              La sesión de caja ha sido cerrada de forma inmutable (SRS-CAJ-009).
+              La sesión de caja ha sido cerrada de forma inmutable.{" "}
+              {resultadoCierre.usuarioCierreNombre &&
+              resultadoCierre.usuarioCierreNombre !== resultadoCierre.usuarioNombre ? (
+                <span className="font-semibold text-primary">
+                  (Cierre ejecutado por Administrador: {resultadoCierre.usuarioCierreNombre})
+                </span>
+              ) : null}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
@@ -204,10 +219,10 @@ export const Apertura_cierre = () => {
           <CardHeader>
             <div className="flex items-center gap-2 text-foreground">
               <Unlock className="size-5" />
-              <CardTitle>Apertura de Sesión de Caja</CardTitle>
+              <CardTitle>Apertura de Sesión de Caja Única</CardTitle>
             </div>
             <CardDescription>
-              Inicia una nueva jornada de cobro para habilitar el Punto de Venta (POS).
+              Inicia la jornada de cobro para habilitar el Punto de Venta (POS). Solo puede haber 1 caja abierta en el sistema.
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleAbrirCaja}>
@@ -238,10 +253,10 @@ export const Apertura_cierre = () => {
               <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground space-y-1">
                 <div className="flex items-center gap-1.5 font-medium text-foreground">
                   <Clock className="size-3.5" />
-                  <span>Registro Inmutable (SRS-CAJ-003)</span>
+                  <span>Registro Inmutable</span>
                 </div>
                 <p>
-                  Al confirmar la apertura, el sistema vinculará tu usuario (<strong>{user?.nombre} {user?.apellido}</strong>) y la fecha/hora exacta del servidor.
+                  Al confirmar la apertura, el sistema vinculará tu usuario (<strong>{user?.nombre} {user?.apellido}</strong>) y la fecha/hora exacta del servidor como responsable de apertura.
                 </p>
               </div>
             </CardContent>
@@ -268,12 +283,12 @@ export const Apertura_cierre = () => {
                 Esta sesión se encuentra operativa para el registro de cobros en el Punto de Venta.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                 <div className="flex items-center gap-2 p-2.5 rounded-lg border border-border bg-background">
                   <User className="size-4 text-muted-foreground shrink-0" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Operador Responsable</p>
+                    <p className="text-xs text-muted-foreground">Operador Responsable (Apertura)</p>
                     <p className="font-medium text-foreground">{cajaActiva.usuarioNombre}</p>
                   </div>
                 </div>
@@ -296,10 +311,31 @@ export const Apertura_cierre = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Mensajes de permisos según rol */}
+              {esAdmin && !esCreadorCaja && (
+                <div className="flex items-start gap-2.5 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-xs text-blue-900 dark:text-blue-200">
+                  <ShieldAlert className="size-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold">Supervisión Administrativa:</span> Esta sesión fue abierta por{" "}
+                    <strong>{cajaActiva.usuarioNombre}</strong>. Como Administrador, puedes efectuar el recuento físico y cerrar la caja en su nombre si el vendedor fue desactivado, finalizó su turno o se encuentra ausente.
+                  </div>
+                </div>
+              )}
+
+              {!puedeCerrar && (
+                <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
+                  <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold">Cierre Restringido:</span> La caja fue abierta por{" "}
+                    <strong>{cajaActiva.usuarioNombre}</strong>. Solo ese operador o un usuario con rol Administrador pueden ejecutar el cierre de la jornada.
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Formulario de Cierre Ciego (SRS-CAJ-005) */}
+          {/* Formulario de Cierre Ciego */}
           <Card className="border-border shadow-sm">
             <CardHeader>
               <div className="flex items-center gap-2 text-foreground">
@@ -327,6 +363,7 @@ export const Apertura_cierre = () => {
                       onChange={(e) => setRecuentoFisico(e.target.value)}
                       placeholder="0.00"
                       className="pl-9 text-base"
+                      disabled={!puedeCerrar || isSubmitting}
                       required
                     />
                   </div>
@@ -340,10 +377,14 @@ export const Apertura_cierre = () => {
                 <Button
                   type="submit"
                   variant="destructive"
-                  disabled={isSubmitting}
+                  disabled={!puedeCerrar || isSubmitting}
                   className="w-full sm:w-auto"
                 >
-                  {isSubmitting ? "Procesando Arqueo..." : "Ejecutar Cierre de Caja"}
+                  {isSubmitting
+                    ? "Procesando Arqueo..."
+                    : esAdmin && !esCreadorCaja
+                    ? "Cerrar Caja como Administrador"
+                    : "Ejecutar Cierre de Caja"}
                 </Button>
               </CardFooter>
             </form>
