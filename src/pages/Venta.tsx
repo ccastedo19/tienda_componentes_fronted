@@ -185,8 +185,8 @@ export const Venta = () => {
       options.push({
         value: cliente.id,
         label: fullName,
-        description: `CI/NIT: ${cliente.ci}`,
-        keywords: `${cliente.ci} ${cliente.nombre} ${cliente.apellido} ${fullName}`,
+        description: cliente.ci ? `CI/NIT: ${cliente.ci}` : "Sin CI/NIT",
+        keywords: `${cliente.ci || ""} ${cliente.nombre} ${cliente.apellido} ${fullName}`,
       })
     }
 
@@ -971,7 +971,7 @@ export const Venta = () => {
                       : "Cliente Genérico"}
                   </strong>
                 </div>
-                {clienteSeleccionado ? (
+                {clienteSeleccionado && clienteSeleccionado.ci ? (
                   <Badge variant="outline" className="text-[10px]">
                     NIT: {clienteSeleccionado.ci}
                   </Badge>

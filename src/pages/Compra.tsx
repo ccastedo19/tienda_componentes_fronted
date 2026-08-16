@@ -108,7 +108,7 @@ export const Compra = () => {
               {items.map((it, i) => (
                 <div key={i} className="text-xs">
                   <span className="font-medium text-foreground">{it.productoNombre}</span>
-                  <span className="text-muted-foreground"> ({it.cantidad} un. a ${it.costoUnitario.toFixed(2)})</span>
+                  <span className="text-muted-foreground"> ({it.cantidad} un. a Bs {it.costoUnitario.toFixed(2)})</span>
                 </div>
               ))}
             </div>
@@ -120,7 +120,7 @@ export const Compra = () => {
         header: ({ column }) => <DataTableColumnHeader column={column} title="Total Compra" />,
         cell: ({ row }) => (
           <span className="font-bold text-foreground">
-            ${row.original.totalCompra.toFixed(2)}
+            Bs {row.original.totalCompra.toFixed(2)}
           </span>
         ),
       },
