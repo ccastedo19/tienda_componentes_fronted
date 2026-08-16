@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import {
   ShoppingCart,
   Search,
@@ -6,15 +6,19 @@ import {
   Minus,
   Trash2,
   User,
+  UserPlus,
   FileText,
   AlertTriangle,
   Lock,
   CheckCircle2,
   Download,
+  Printer,
+  Eye,
   Cpu,
   Wrench,
   ChevronRight,
   ShieldAlert,
+  X,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 
@@ -33,29 +37,29 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { SmartCombobox, type SmartComboboxOption } from "@/components/ui/smart-combobox"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { ApiRequestError } from "@/lib/api/client"
 import { getCajaActiva } from "@/services/caja.service"
-import { findClienteByCi } from "@/services/cliente.service"
-import { buscarCotizacionesPorCi, createCotizacion, descargarCotizacionPdf } from "@/services/cotizacion.service"
+import { getClientes } from "@/services/cliente.service"
+import { getCotizaciones } from "@/services/cotizacion.service"
 import { getProductos, getSeriesByProducto } from "@/services/producto.service"
 import { getServicios } from "@/services/servicio.service"
-import { descargarNotaVentaPdf, procesarCheckout } from "@/services/venta.service"
+import {
+  descargarNotaVentaPdf,
+  getNotaVentaPdfObjectUrl,
+  procesarCheckout,
+} from "@/services/venta.service"
 import type { Caja } from "@/types/caja"
 import type { Cliente } from "@/types/cliente"
 import type { Cotizacion } from "@/types/cotizacion"
 import type { Producto, ProductoSerie } from "@/types/producto"
 import type { Servicio } from "@/types/servicio"
-import type { CheckoutRequest, ItemProductoRequest, ItemServicioRequest, Venta as VentaModel } from "@/types/venta"
+import type { CheckoutRequest, Venta as VentaModel } from "@/types/venta"
+
+const CLIENTE_GENERICO_VALUE = "__cliente_generico__"
 
 type CartProductItem = {
   type: "producto"
@@ -78,60 +82,68 @@ type CartServiceItem = {
 type CartItem = CartProductItem | CartServiceItem
 
 export const Venta = () => {
-  // Estado de caja
   const [cajaActiva, setCajaActiva] = useState<Caja | null>(null)
   const [isCheckingCaja, setIsCheckingCaja] = useState(true)
 
-  // Catálogos
   const [productos, setProductos] = useState<Producto[]>([])
   const [servicios, setServicios] = useState<Servicio[]>([])
+  const [clientes, setClientes] = useState<Cliente[]>([])
   const [catalogoTab, setCatalogoTab] = useState<"productos" | "servicios">("productos")
   const [searchTerm, setSearchTerm] = useState("")
 
-  // Carrito de compras
   const [cart, setCart] = useState<CartItem[]>([])
 
-  // Cliente
   const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null)
-  const [ciSearch, setCiSearch] = useState("")
+  const [clienteOptionId, setClienteOptionId] = useState<string | null>(CLIENTE_GENERICO_VALUE)
   const [isClientModalOpen, setIsClientModalOpen] = useState(false)
 
-  // Cotizaciones / Proformas loader
   const [isProformaModalOpen, setIsProformaModalOpen] = useState(false)
-  const [proformasEncontradas, setProformasEncontradas] = useState<Cotizacion[]>([])
-  const [proformaCiSearch, setProformaCiSearch] = useState("")
-  const [isSearchingProformas, setIsSearchingProformas] = useState(false)
+  const [proformas, setProformas] = useState<Cotizacion[]>([])
+  const [proformaOptionId, setProformaOptionId] = useState<string | null>(null)
+  const [isLoadingProformas, setIsLoadingProformas] = useState(false)
   const [loadedCotizacionId, setLoadedCotizacionId] = useState<string | null>(null)
 
-  // Modal de Checkout / Pago
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false)
   const [metodoPago, setMetodoPago] = useState<"Efectivo" | "QR" | "Pago Mixto">("Efectivo")
   const [montoRecibidoEfectivo, setMontoRecibidoEfectivo] = useState("")
   const [montoQr, setMontoQr] = useState("")
 
-  // Bypass de Margen Mínimo (SRS-POS-006, 007, 008)
   const [adminEmail, setAdminEmail] = useState("")
   const [adminPassword, setAdminPassword] = useState("")
   const [justificacionBypass, setJustificacionBypass] = useState("")
 
-  // Estado de procesamiento y éxito
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [ventaCompletada, setVentaCompletada] = useState<VentaModel | null>(null)
 
-  // Cargar sesión de caja y catálogo inicial
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [isLoadingPdf, setIsLoadingPdf] = useState(false)
+  const pdfIframeRef = useRef<HTMLIFrameElement>(null)
+
+  const refreshProductos = async () => {
+    try {
+      const prods = await getProductos()
+      setProductos(prods)
+    } catch {
+      // El stock se actualizará en la próxima recarga
+    }
+  }
+
   useEffect(() => {
     const initData = async () => {
       setIsCheckingCaja(true)
       try {
-        const [caja, prods, servs] = await Promise.all([
+        const [caja, prods, servs, clientesData] = await Promise.all([
           getCajaActiva().catch(() => null),
           getProductos().catch(() => []),
           getServicios().catch(() => []),
+          getClientes().catch(() => []),
         ])
         setCajaActiva(caja)
         setProductos(prods)
         setServicios(servs)
+        setClientes(clientesData.filter((c) => (c.estado ?? "Activo") !== "Eliminado"))
       } catch {
         // Error handling
       } finally {
@@ -141,35 +153,83 @@ export const Venta = () => {
     void initData()
   }, [])
 
-  // Búsqueda de cliente por CI
-  const handleBuscarCliente = async (ci: string) => {
-    if (!ci.trim()) {
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) {
+        window.URL.revokeObjectURL(pdfUrl)
+      }
+    }
+  }, [pdfUrl])
+
+  const clienteOptions = useMemo<SmartComboboxOption[]>(() => {
+    const options: SmartComboboxOption[] = [
+      {
+        value: CLIENTE_GENERICO_VALUE,
+        label: "Cliente Genérico",
+        description: "Venta sin cliente registrado",
+        keywords: "generico mostrador sin cliente",
+      },
+    ]
+
+    for (const cliente of clientes) {
+      const fullName = `${cliente.nombre} ${cliente.apellido}`.trim()
+      options.push({
+        value: cliente.id,
+        label: fullName,
+        description: `CI/NIT: ${cliente.ci}`,
+        keywords: `${cliente.ci} ${cliente.nombre} ${cliente.apellido} ${fullName}`,
+      })
+    }
+
+    return options
+  }, [clientes])
+
+  const proformaOptions = useMemo<SmartComboboxOption[]>(() => {
+    return proformas.map((cot) => ({
+      value: cot.id,
+      label: `${cot.codigoProforma} — ${cot.clienteNombre}`,
+      description: `CI/NIT: ${cot.clienteCi} • Bs. ${cot.totalEstimado.toFixed(2)}`,
+      keywords: `${cot.codigoProforma} ${cot.clienteCi} ${cot.clienteNombre}`,
+    }))
+  }, [proformas])
+
+  const handleSelectCliente = (value: string | null) => {
+    if (value === null) {
+      // Limpia el input para buscar; se mantiene como genérico hasta elegir otro
+      setClienteOptionId(null)
       setClienteSeleccionado(null)
       return
     }
-    try {
-      const c = await findClienteByCi(ci.trim())
-      setClienteSeleccionado(c)
-    } catch {
+
+    if (value === CLIENTE_GENERICO_VALUE) {
+      setClienteOptionId(CLIENTE_GENERICO_VALUE)
       setClienteSeleccionado(null)
+      return
     }
+
+    const cliente = clientes.find((c) => c.id === value) ?? null
+    setClienteOptionId(value)
+    setClienteSeleccionado(cliente)
   }
 
-  // Búsqueda de proformas pendientes
-  const handleBuscarProformas = async () => {
-    if (!proformaCiSearch.trim()) return
-    setIsSearchingProformas(true)
+  const loadProformas = async () => {
+    setIsLoadingProformas(true)
     try {
-      const data = await buscarCotizacionesPorCi(proformaCiSearch.trim())
-      setProformasEncontradas(data)
+      const data = await getCotizaciones()
+      setProformas(data.filter((cot) => cot.estado === "Pendiente"))
     } catch {
-      setProformasEncontradas([])
+      setProformas([])
     } finally {
-      setIsSearchingProformas(false)
+      setIsLoadingProformas(false)
     }
   }
 
-  // Cargar proforma en el carrito
+  const handleOpenProformaModal = () => {
+    setProformaOptionId(null)
+    setIsProformaModalOpen(true)
+    void loadProformas()
+  }
+
   const handleCargarProformaEnCarrito = (cot: Cotizacion) => {
     const newCart: CartItem[] = []
 
@@ -207,14 +267,33 @@ export const Venta = () => {
 
     setCart(newCart)
     setLoadedCotizacionId(cot.id)
-    if (cot.clienteCi) {
-      void handleBuscarCliente(cot.clienteCi)
-      setCiSearch(cot.clienteCi)
+
+    if (cot.clienteId) {
+      const cliente = clientes.find((c) => c.id === cot.clienteId)
+      if (cliente) {
+        setClienteSeleccionado(cliente)
+        setClienteOptionId(cliente.id)
+      } else if (cot.clienteCi) {
+        const byCi = clientes.find((c) => c.ci === cot.clienteCi)
+        if (byCi) {
+          setClienteSeleccionado(byCi)
+          setClienteOptionId(byCi.id)
+        }
+      }
     }
+
     setIsProformaModalOpen(false)
+    setProformaOptionId(null)
   }
 
-  // Agregar Producto al carrito
+  const handleConfirmLoadProforma = () => {
+    if (!proformaOptionId) return
+    const cot = proformas.find((item) => item.id === proformaOptionId)
+    if (cot) {
+      handleCargarProformaEnCarrito(cot)
+    }
+  }
+
   const handleAddProducto = async (producto: Producto) => {
     if (producto.stockDisponible <= 0) {
       setError(`Stock insuficiente para el artículo: ${producto.nombreComercial}`)
@@ -228,7 +307,9 @@ export const Venta = () => {
     if (existingIndex >= 0) {
       const item = cart[existingIndex] as CartProductItem
       if (item.cantidad + 1 > producto.stockDisponible) {
-        setError(`SRS-POS-005: La cantidad solicitada supera el stock disponible (${producto.stockDisponible})`)
+        setError(
+          `SRS-POS-005: La cantidad solicitada supera el stock disponible (${producto.stockDisponible})`
+        )
         return
       }
       const updated = [...cart]
@@ -257,7 +338,6 @@ export const Venta = () => {
     }
   }
 
-  // Agregar Servicio al carrito
   const handleAddServicio = (servicio: Servicio) => {
     setCart([
       ...cart,
@@ -271,7 +351,6 @@ export const Venta = () => {
     ])
   }
 
-  // Actualizar cantidad de producto
   const handleUpdateCantidad = (index: number, delta: number) => {
     const item = cart[index]
     if (item.type !== "producto") return
@@ -283,7 +362,9 @@ export const Venta = () => {
     }
 
     if (newCant > item.producto.stockDisponible) {
-      setError(`SRS-POS-005: La cantidad solicitada supera el stock disponible (${item.producto.stockDisponible})`)
+      setError(
+        `SRS-POS-005: La cantidad solicitada supera el stock disponible (${item.producto.stockDisponible})`
+      )
       return
     }
 
@@ -292,12 +373,10 @@ export const Venta = () => {
     setCart(updated)
   }
 
-  // Eliminar item
   const handleRemoveItem = (index: number) => {
     setCart(cart.filter((_, i) => i !== index))
   }
 
-  // Modificar precio de servicio en línea (SRS-POS-009)
   const handleUpdatePrecioServicio = (index: number, precio: number) => {
     const item = cart[index]
     if (item.type !== "servicio") return
@@ -306,20 +385,19 @@ export const Venta = () => {
     setCart(updated)
   }
 
-  // Modificar descuento de item (SRS-POS-010)
-  const handleUpdateDescuento = (
-    index: number,
-    tipo: "Porcentaje" | "Fijo" | null,
-    valor: number
-  ) => {
+  const handleUpdateDescuento = (index: number, valor: number) => {
     const item = cart[index]
+    const descuento = Math.max(0, valor)
     const updated = [...cart]
-    updated[index] = { ...item, tipoDescuento: tipo, valorDescuento: valor }
+    updated[index] = {
+      ...item,
+      tipoDescuento: descuento > 0 ? "Fijo" : null,
+      valorDescuento: descuento,
+    }
     setCart(updated)
   }
 
-  // Asignar serie a producto
-  const handleSelectSerie = (index: number, serieId: string) => {
+  const handleSelectSerie = (index: number, serieId: string | null) => {
     const item = cart[index]
     if (item.type !== "producto") return
     const updated = [...cart]
@@ -327,27 +405,30 @@ export const Venta = () => {
     setCart(updated)
   }
 
-  // Cálculos reactivos de subtotales y margen
+  const getItemSubtotal = (item: CartItem) => {
+    if (item.type === "producto") {
+      const bruto = item.producto.precioVenta * item.cantidad
+      return Math.max(0, bruto - (item.valorDescuento || 0))
+    }
+
+    return Math.max(0, item.precioFinalAplicado - (item.valorDescuento || 0))
+  }
+
   const { totalGeneral, requiereBypassMargen } = useMemo(() => {
     let total = 0
     let requiereBypass = false
 
     for (const item of cart) {
       if (item.type === "producto") {
-        let subtotal = item.producto.precioVenta * item.cantidad
-        if (item.tipoDescuento === "Porcentaje" && item.valorDescuento > 0) {
-          subtotal -= subtotal * (item.valorDescuento / 100)
-        } else if (item.tipoDescuento === "Fijo" && item.valorDescuento > 0) {
-          subtotal -= item.valorDescuento
-        }
-        total += Math.max(0, subtotal)
+        const subtotal = getItemSubtotal(item)
+        total += subtotal
 
         const precioNetoUnitario = subtotal / item.cantidad
         if (precioNetoUnitario < item.producto.precioCosto) {
           requiereBypass = true
         }
       } else {
-        total += Math.max(0, item.precioFinalAplicado)
+        total += getItemSubtotal(item)
       }
     }
 
@@ -357,55 +438,41 @@ export const Venta = () => {
     }
   }, [cart])
 
-  // Guardar como Cotización (SRS-POS-013, SRS-POS-014)
-  const handleGuardarCotizacion = async () => {
-    if (!clienteSeleccionado) {
-      setError("SRS-POS-013: Es obligatorio asociar a un cliente registrado con Cédula de Identidad (CI) para emitir una cotización.")
-      return
-    }
-    if (cart.length === 0) {
-      setError("El carrito está vacío.")
-      return
-    }
-
-    setIsProcessing(true)
+  const openVentaPdfModal = async (venta: VentaModel) => {
+    setIsPdfModalOpen(true)
+    setIsLoadingPdf(true)
     setError(null)
 
-    const prodsReq: ItemProductoRequest[] = cart
-      .filter((i): i is CartProductItem => i.type === "producto")
-      .map((i) => ({
-        productoId: i.producto.id,
-        cantidad: i.cantidad,
-      }))
-
-    const servsReq: ItemServicioRequest[] = cart
-      .filter((i): i is CartServiceItem => i.type === "servicio")
-      .map((i) => ({
-        servicioId: i.servicio.id,
-        precioFinalAplicado: i.precioFinalAplicado,
-      }))
-
     try {
-      const cot = await createCotizacion({
-        clienteId: clienteSeleccionado.id,
-        diasValidez: 15,
-        productos: prodsReq,
-        servicios: servsReq,
+      const url = await getNotaVentaPdfObjectUrl(venta.id)
+      setPdfUrl((prev) => {
+        if (prev) window.URL.revokeObjectURL(prev)
+        return url
       })
-      await descargarCotizacionPdf(cot.id, cot.codigoProforma)
-      setCart([])
-      setClienteSeleccionado(null)
-      setCiSearch("")
-      alert(`Cotización ${cot.codigoProforma} guardada con éxito y PDF descargado.`)
-    } catch (err) {
-      const msg = err instanceof ApiRequestError ? err.message : "Error al guardar cotización."
-      setError(msg)
+    } catch {
+      setError("No se pudo cargar el PDF de la venta.")
+      setIsPdfModalOpen(false)
     } finally {
-      setIsProcessing(false)
+      setIsLoadingPdf(false)
     }
   }
 
-  // Ejecutar Checkout
+  const handlePrintPdf = () => {
+    const iframe = pdfIframeRef.current
+    if (iframe?.contentWindow) {
+      iframe.contentWindow.focus()
+      iframe.contentWindow.print()
+      return
+    }
+
+    if (pdfUrl) {
+      const printWindow = window.open(pdfUrl, "_blank")
+      printWindow?.addEventListener("load", () => {
+        printWindow.print()
+      })
+    }
+  }
+
   const handleConfirmCheckout = async (e: React.FormEvent) => {
     e.preventDefault()
     if (cart.length === 0) return
@@ -416,7 +483,9 @@ export const Venta = () => {
     if (metodoPago === "Efectivo") {
       recEfectivo = parseFloat(montoRecibidoEfectivo)
       if (isNaN(recEfectivo) || recEfectivo < totalGeneral) {
-        setError(`SRS-POS-004: El monto recibido en efectivo ($${recEfectivo || 0}) debe ser mayor o igual al total ($${totalGeneral.toFixed(2)}).`)
+        setError(
+          `SRS-POS-004: El monto recibido en efectivo ($${recEfectivo || 0}) debe ser mayor o igual al total ($${totalGeneral.toFixed(2)}).`
+        )
         return
       }
     } else if (metodoPago === "QR") {
@@ -425,14 +494,18 @@ export const Venta = () => {
       recEfectivo = parseFloat(montoRecibidoEfectivo) || 0
       recQr = parseFloat(montoQr) || 0
       if (recEfectivo + recQr < totalGeneral) {
-        setError(`SRS-POS-017: La suma de Efectivo ($${recEfectivo}) y QR ($${recQr}) debe ser mayor o igual al total ($${totalGeneral.toFixed(2)}).`)
+        setError(
+          `SRS-POS-017: La suma de Efectivo ($${recEfectivo}) y QR ($${recQr}) debe ser mayor o igual al total ($${totalGeneral.toFixed(2)}).`
+        )
         return
       }
     }
 
     if (requiereBypassMargen) {
       if (!adminEmail.trim() || !adminPassword.trim() || !justificacionBypass.trim()) {
-        setError("SRS-POS-007/008: Se requieren credenciales de Administrador y justificación técnica para el bypass por margen mínimo.")
+        setError(
+          "SRS-POS-007/008: Se requieren credenciales de Administrador y justificación técnica para el bypass por margen mínimo."
+        )
         return
       }
     }
@@ -474,10 +547,16 @@ export const Venta = () => {
       setIsCheckoutModalOpen(false)
       setCart([])
       setClienteSeleccionado(null)
-      setCiSearch("")
+      setClienteOptionId(CLIENTE_GENERICO_VALUE)
       setLoadedCotizacionId(null)
+      setMontoRecibidoEfectivo("")
+      setMontoQr("")
+      setAdminEmail("")
+      setAdminPassword("")
+      setJustificacionBypass("")
 
-      await descargarNotaVentaPdf(venta.id, venta.codigoNotaVenta).catch(() => null)
+      await refreshProductos()
+      await openVentaPdfModal(venta)
     } catch (err) {
       const msg = err instanceof ApiRequestError ? err.message : "Error al procesar el cobro."
       setError(msg)
@@ -491,7 +570,8 @@ export const Venta = () => {
       (p) =>
         p.nombreComercial.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.skuUnico.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.categoriaNombre && p.categoriaNombre.toLowerCase().includes(searchTerm.toLowerCase()))
+        (p.categoriaNombre &&
+          p.categoriaNombre.toLowerCase().includes(searchTerm.toLowerCase()))
     )
   }, [productos, searchTerm])
 
@@ -512,17 +592,22 @@ export const Venta = () => {
 
   if (!cajaActiva) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 text-center max-w-lg mx-auto min-h-[60vh] space-y-4">
-        <div className="size-14 rounded-full bg-destructive/10 text-destructive flex items-center justify-center">
+      <div className="mx-auto flex min-h-[60vh] max-w-lg flex-col items-center justify-center space-y-4 p-8 text-center">
+        <div className="flex size-14 items-center justify-center rounded-full bg-destructive/10 text-destructive">
           <Lock className="size-7" />
         </div>
         <h2 className="text-xl font-bold tracking-tight text-foreground">
           Acceso al Punto de Venta Bloqueado
         </h2>
         <p className="text-sm text-muted-foreground">
-          SRS-CAJ-001: El sistema bloquea las operaciones de cobro en el POS hasta que inicies una sesión de caja en estado 'Abierta'.
+          SRS-CAJ-001: El sistema bloquea las operaciones de cobro en el POS hasta que inicies una
+          sesión de caja en estado 'Abierta'.
         </p>
-        <Button nativeButton={false} render={<Link to="/apertura-cierre" />} className="cursor-pointer">
+        <Button
+          nativeButton={false}
+          render={<Link to="/apertura-cierre" />}
+          className="cursor-pointer"
+        >
           Ir a Apertura de Caja
         </Button>
       </div>
@@ -531,15 +616,15 @@ export const Venta = () => {
 
   return (
     <div className="space-y-4">
-      {/* Header POS */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl flex items-center gap-2">
+          <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
             <ShoppingCart className="size-6" />
             Punto de Venta (POS)
           </h1>
           <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-            Sesión activa: <strong>{cajaActiva.usuarioNombre}</strong> • Apertura: {new Date(cajaActiva.fechaHoraApertura).toLocaleTimeString()}
+            Sesión activa: <strong>{cajaActiva.usuarioNombre}</strong> • Apertura:{" "}
+            {new Date(cajaActiva.fechaHoraApertura).toLocaleTimeString()}
           </p>
         </div>
 
@@ -548,11 +633,11 @@ export const Venta = () => {
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setIsProformaModalOpen(true)}
+            onClick={handleOpenProformaModal}
             className="cursor-pointer gap-1.5"
           >
             <FileText className="size-4" />
-            Cargar Proforma (SRS-POS-015)
+            Cargar Proforma
           </Button>
         </div>
       </div>
@@ -565,38 +650,46 @@ export const Venta = () => {
         </Alert>
       )}
 
-      {/* Venta exitosa banner */}
       {ventaCompletada && (
-        <Alert className="border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300">
+        <Alert className="relative border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300">
           <CheckCircle2 className="size-5 text-emerald-600 dark:text-emerald-400" />
-          <AlertTitle className="font-semibold text-foreground">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            onClick={() => setVentaCompletada(null)}
+            className="absolute top-2 right-2 text-muted-foreground hover:text-foreground"
+            aria-label="Cerrar aviso de venta exitosa"
+          >
+            <X className="size-3.5" />
+          </Button>
+          <AlertTitle className="pr-8 font-semibold text-foreground">
             ¡Venta {ventaCompletada.codigoNotaVenta} procesada exitosamente!
           </AlertTitle>
-          <AlertDescription className="mt-1 flex items-center justify-between">
+          <AlertDescription className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <span>
-              Total: <strong>Bs. {ventaCompletada.total.toFixed(2)}</strong> ({ventaCompletada.metodoPago}). Comprobante PDF generado.
+              Total: <strong>Bs. {ventaCompletada.total.toFixed(2)}</strong> (
+              {ventaCompletada.metodoPago}).
             </span>
             <Button
               type="button"
               variant="outline"
               size="xs"
-              onClick={() => void descargarNotaVentaPdf(ventaCompletada.id, ventaCompletada.codigoNotaVenta)}
+              onClick={() => void openVentaPdfModal(ventaCompletada)}
               className="gap-1 bg-background text-foreground"
             >
-              <Download className="size-3.5" />
-              Re-descargar PDF
+              <Eye className="size-3.5" />
+              Ver venta
             </Button>
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Layout Split */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* COLUMNA IZQUIERDA: Catálogo (7 cols) */}
-        <div className="lg:col-span-7 space-y-4">
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-12">
+        <div className="space-y-4 lg:col-span-7">
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Buscar producto por código, nombre o categoría..."
                 value={searchTerm}
@@ -615,42 +708,41 @@ export const Venta = () => {
             </Tabs>
           </div>
 
-          {/* Grid de Artículos */}
           {catalogoTab === "productos" ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[600px] overflow-y-auto pr-1">
+            <div className="grid max-h-[600px] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3">
               {filteredProductos.map((prod) => {
                 const isOutOfStock = prod.stockDisponible <= 0
                 return (
                   <Card
                     key={prod.id}
-                    onClick={() => !isOutOfStock && handleAddProducto(prod)}
-                    className={`border-border transition-all select-none ${
+                    onClick={() => !isOutOfStock && void handleAddProducto(prod)}
+                    className={`border-border select-none transition-all ${
                       isOutOfStock
-                        ? "opacity-50 cursor-not-allowed bg-muted/30"
+                        ? "cursor-not-allowed bg-muted/30 opacity-50"
                         : "cursor-pointer hover:border-foreground/40 hover:shadow-xs active:scale-[0.99]"
                     }`}
                   >
                     <CardHeader className="p-3 pb-1.5">
-                      <div className="aspect-square rounded-md bg-muted flex items-center justify-center overflow-hidden mb-2">
+                      <div className="mb-2 flex aspect-square items-center justify-center overflow-hidden rounded-md bg-muted">
                         {prod.imagenUrl ? (
                           <img
                             src={prod.imagenUrl}
                             alt={prod.nombreComercial}
-                            className="w-full h-full object-cover"
+                            className="h-full w-full object-cover"
                           />
                         ) : (
                           <Cpu className="size-8 text-muted-foreground" />
                         )}
                       </div>
-                      <Badge variant="outline" className="text-[10px] font-mono w-fit">
+                      <Badge variant="outline" className="w-fit font-mono text-[10px]">
                         {prod.skuUnico}
                       </Badge>
-                      <CardTitle className="text-xs font-semibold line-clamp-2 mt-1">
+                      <CardTitle className="mt-1 line-clamp-2 text-xs font-semibold">
                         {prod.nombreComercial}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-3 pt-0">
-                      <div className="flex items-center justify-between mt-2">
+                      <div className="mt-2 flex items-center justify-between">
                         <span className="text-sm font-bold text-foreground">
                           Bs. {prod.precioVenta.toFixed(2)}
                         </span>
@@ -668,34 +760,34 @@ export const Venta = () => {
               })}
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[600px] overflow-y-auto pr-1">
+            <div className="grid max-h-[600px] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3">
               {filteredServicios.map((serv) => (
                 <Card
                   key={serv.id}
                   onClick={() => handleAddServicio(serv)}
-                  className="border-border transition-all cursor-pointer hover:border-foreground/40 hover:shadow-xs active:scale-[0.99]"
+                  className="cursor-pointer border-border transition-all hover:border-foreground/40 hover:shadow-xs active:scale-[0.99]"
                 >
                   <CardHeader className="p-3 pb-1.5">
-                    <div className="aspect-square rounded-md bg-muted flex items-center justify-center overflow-hidden mb-2">
+                    <div className="mb-2 flex aspect-square items-center justify-center overflow-hidden rounded-md bg-muted">
                       {serv.imagenUrl ? (
                         <img
                           src={serv.imagenUrl}
                           alt={serv.nombre}
-                          className="w-full h-full object-cover"
+                          className="h-full w-full object-cover"
                         />
                       ) : (
                         <Wrench className="size-8 text-muted-foreground" />
                       )}
                     </div>
-                    <Badge variant="secondary" className="text-[10px] w-fit">
+                    <Badge variant="secondary" className="w-fit text-[10px]">
                       Servicio Técnico
                     </Badge>
-                    <CardTitle className="text-xs font-semibold line-clamp-2 mt-1">
+                    <CardTitle className="mt-1 line-clamp-2 text-xs font-semibold">
                       {serv.nombre}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-3 pt-0">
-                    <div className="flex items-center justify-between mt-2">
+                    <div className="mt-2 flex items-center justify-between">
                       <span className="text-sm font-bold text-foreground">
                         Bs. {serv.precioBaseSugerido.toFixed(2)}
                       </span>
@@ -708,59 +800,64 @@ export const Venta = () => {
           )}
         </div>
 
-        {/* COLUMNA DERECHA: Carrito (5 cols) */}
-        <div className="lg:col-span-5 space-y-4">
+        <div className="space-y-4 lg:col-span-5">
           <Card className="border-border shadow-xs">
             <CardHeader className="p-3.5 pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm flex items-center gap-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle className="flex items-center gap-1.5 text-sm">
                   <User className="size-4" />
                   Cliente
                 </CardTitle>
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="outline"
                   size="xs"
                   onClick={() => setIsClientModalOpen(true)}
-                  className="text-xs text-primary cursor-pointer"
+                  className="cursor-pointer gap-1.5"
                 >
-                  <Plus className="size-3" />
+                  <UserPlus className="size-3.5" />
                   Nuevo Cliente
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="p-3.5 pt-0 space-y-2">
-              <Input
-                placeholder="Buscar por NIT / Cédula..."
-                value={ciSearch}
-                onChange={(e) => {
-                  setCiSearch(e.target.value)
-                  void handleBuscarCliente(e.target.value)
+            <CardContent className="space-y-2 p-3.5 pt-0">
+              <SmartCombobox
+                options={clienteOptions}
+                value={clienteOptionId}
+                onValueChange={handleSelectCliente}
+                placeholder="Buscar por CI/NIT o nombre completo..."
+                emptyMessage="No se encontraron clientes."
+                className="w-full text-xs"
+                clearOnFocus
+                clearOnFocusWhen={CLIENTE_GENERICO_VALUE}
+                onOpenChange={(open) => {
+                  if (!open) {
+                    setClienteOptionId((current) => current ?? CLIENTE_GENERICO_VALUE)
+                  }
                 }}
-                className="text-xs h-8"
               />
-              <div className="p-2 rounded-md bg-muted/40 border border-border text-xs flex items-center justify-between">
+              <div className="flex items-center justify-between rounded-md border border-border bg-muted/40 p-2 text-xs">
                 <div>
                   <span className="text-muted-foreground">Titular: </span>
                   <strong className="text-foreground">
                     {clienteSeleccionado
                       ? `${clienteSeleccionado.nombre} ${clienteSeleccionado.apellido}`
-                      : "Cliente Genérico (Mostrador)"}
+                      : "Cliente Genérico"}
                   </strong>
                 </div>
-                {clienteSeleccionado && (
+                {clienteSeleccionado ? (
                   <Badge variant="outline" className="text-[10px]">
                     NIT: {clienteSeleccionado.ci}
                   </Badge>
-                )}
+                ) : null}
               </div>
             </CardContent>
           </Card>
 
           <Card className="border-border shadow-xs">
-            <CardHeader className="p-3.5 pb-2 border-b border-border">
+            <CardHeader className="border-b border-border p-3.5 pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-sm">
                   <ShoppingCart className="size-4" />
                   Carrito ({cart.length} ítems)
                 </CardTitle>
@@ -770,7 +867,7 @@ export const Venta = () => {
                     variant="ghost"
                     size="xs"
                     onClick={() => setCart([])}
-                    className="text-destructive hover:bg-destructive/10 cursor-pointer text-xs"
+                    className="cursor-pointer text-xs text-destructive hover:bg-destructive/10"
                   >
                     Vaciar
                   </Button>
@@ -778,185 +875,182 @@ export const Venta = () => {
               </div>
             </CardHeader>
 
-            <CardContent className="p-3.5 space-y-3 max-h-[360px] overflow-y-auto">
+            <CardContent className="max-h-[360px] space-y-3 overflow-y-auto p-3.5">
               {cart.length === 0 ? (
-                <div className="text-center py-8 text-xs text-muted-foreground">
+                <div className="py-8 text-center text-xs text-muted-foreground">
                   El carrito está vacío. Selecciona artículos del catálogo para agregar.
                 </div>
               ) : (
-                cart.map((item, index) => (
-                  <div
-                    key={index}
-                    className="p-2.5 rounded-lg border border-border bg-card space-y-2 text-xs shadow-2xs"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="font-medium text-foreground">
-                          {item.type === "producto" ? item.producto.nombreComercial : item.servicio.nombre}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground font-mono">
-                          {item.type === "producto" ? `Código: ${item.producto.skuUnico}` : "Servicio Técnico"}
-                        </div>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-xs"
-                        onClick={() => handleRemoveItem(index)}
-                        className="text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    </div>
+                cart.map((item, index) => {
+                  const serieOptions: SmartComboboxOption[] =
+                    item.type === "producto"
+                      ? item.seriesDisponibles.map((s) => ({
+                          value: s.id,
+                          label: s.numeroSerieAlfanumerico,
+                          keywords: s.numeroSerieAlfanumerico,
+                        }))
+                      : []
 
-                    <div className="flex items-center justify-between pt-1 border-t border-border/50">
-                      {item.type === "producto" ? (
-                        <div className="flex items-center gap-1.5">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon-xs"
-                            onClick={() => handleUpdateCantidad(index, -1)}
-                          >
-                            <Minus className="size-3" />
-                          </Button>
-                          <span className="font-semibold text-foreground px-1">{item.cantidad}</span>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon-xs"
-                            onClick={() => handleUpdateCantidad(index, 1)}
-                          >
-                            <Plus className="size-3" />
-                          </Button>
+                  return (
+                    <div
+                      key={index}
+                      className="space-y-2 rounded-lg border border-border bg-card p-2.5 text-xs shadow-2xs"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="font-medium text-foreground">
+                            {item.type === "producto"
+                              ? item.producto.nombreComercial
+                              : item.servicio.nombre}
+                          </div>
+                          <div className="font-mono text-[10px] text-muted-foreground">
+                            {item.type === "producto"
+                              ? `Código: ${item.producto.skuUnico}`
+                              : "Servicio Técnico"}
+                          </div>
                         </div>
-                      ) : (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => handleRemoveItem(index)}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </div>
+
+                      <div className="flex items-center justify-between border-t border-border/50 pt-1">
+                        {item.type === "producto" ? (
+                          <div className="flex items-center gap-1.5">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon-xs"
+                              onClick={() => handleUpdateCantidad(index, -1)}
+                            >
+                              <Minus className="size-3" />
+                            </Button>
+                            <span className="px-1 font-semibold text-foreground">
+                              {item.cantidad}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon-xs"
+                              onClick={() => handleUpdateCantidad(index, 1)}
+                            >
+                              <Plus className="size-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <span className="text-[11px] text-muted-foreground">Precio: Bs.</span>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={item.precioFinalAplicado}
+                              onChange={(e) =>
+                                handleUpdatePrecioServicio(
+                                  index,
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              className="h-6 w-20 px-1.5 text-xs"
+                            />
+                          </div>
+                        )}
+
                         <div className="flex items-center gap-1">
-                          <span className="text-muted-foreground text-[11px]">Precio: Bs.</span>
                           <Input
                             type="number"
+                            placeholder="Desc"
                             min="0"
                             step="0.01"
-                            value={item.precioFinalAplicado}
+                            value={item.valorDescuento || ""}
                             onChange={(e) =>
-                              handleUpdatePrecioServicio(index, parseFloat(e.target.value) || 0)
+                              handleUpdateDescuento(
+                                index,
+                                parseFloat(e.target.value) || 0
+                              )
                             }
-                            className="h-6 w-20 text-xs px-1.5"
+                            className="h-6 w-16 px-1 text-xs"
+                          />
+                          <span className="text-[10px] text-muted-foreground">Bs.</span>
+                        </div>
+
+                        <div className="text-sm font-bold text-foreground">
+                          Bs. {getItemSubtotal(item).toFixed(2)}
+                        </div>
+                      </div>
+
+                      {item.type === "producto" && item.seriesDisponibles.length > 0 ? (
+                        <div className="space-y-1 pt-1">
+                          <Label className="text-[10px] text-muted-foreground">
+                            Número de Serie Asignado *
+                          </Label>
+                          <SmartCombobox
+                            options={serieOptions}
+                            value={item.selectedSerieId}
+                            onValueChange={(value) => handleSelectSerie(index, value)}
+                            placeholder="Buscar / seleccionar serie..."
+                            emptyMessage="No se encontraron series."
+                            className="w-full text-xs"
                           />
                         </div>
-                      )}
-
-                      <div className="flex items-center gap-1">
-                        <Input
-                          type="number"
-                          placeholder="Desc %"
-                          min="0"
-                          max="100"
-                          value={item.valorDescuento || ""}
-                          onChange={(e) =>
-                            handleUpdateDescuento(
-                              index,
-                              "Porcentaje",
-                              parseFloat(e.target.value) || 0
-                            )
-                          }
-                          className="h-6 w-16 text-xs px-1"
-                        />
-                        <span className="text-[10px] text-muted-foreground">%</span>
-                      </div>
-
-                      <div className="font-bold text-foreground text-sm">
-                        {item.type === "producto"
-                          ? `Bs. ${(
-                              item.producto.precioVenta * item.cantidad * (1 - (item.valorDescuento || 0) / 100)
-                            ).toFixed(2)}`
-                          : `Bs. ${item.precioFinalAplicado.toFixed(2)}`}
-                      </div>
+                      ) : null}
                     </div>
-
-                    {item.type === "producto" && item.seriesDisponibles.length > 0 && (
-                      <div className="pt-1">
-                        <Label className="text-[10px] text-muted-foreground">
-                          Número de Serie Asignado (SRS-CAT-004) *
-                        </Label>
-                        <Select
-                          value={item.selectedSerieId || ""}
-                          onValueChange={(val) => handleSelectSerie(index, val ?? "")}
-                        >
-                          <SelectTrigger className="h-7 text-xs">
-                            <SelectValue placeholder="Seleccionar serie" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {item.seriesDisponibles.map((s) => (
-                              <SelectItem key={s.id} value={s.id}>
-                                {s.numeroSerieAlfanumerico}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                  </div>
-                ))
+                  )
+                })
               )}
             </CardContent>
 
-            <CardFooter className="p-3.5 flex-col gap-3 border-t border-border bg-muted/20">
+            <CardFooter className="flex-col gap-3 border-t border-border bg-muted/20 p-3.5">
               <div className="w-full space-y-1 text-xs">
                 {requiereBypassMargen && (
-                  <div className="flex items-center gap-1.5 p-2 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-[11px]">
+                  <div className="flex items-center gap-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-[11px] text-amber-800 dark:text-amber-300">
                     <ShieldAlert className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
-                    <span>SRS-POS-006: Uno o más productos se venden por debajo del costo. Requerirá Bypass de Administrador.</span>
+                    <span>
+                      SRS-POS-006: Uno o más productos se venden por debajo del costo. Requerirá Bypass
+                      de Administrador.
+                    </span>
                   </div>
                 )}
-                <div className="flex items-center justify-between text-base font-bold text-foreground pt-1">
+                <div className="flex items-center justify-between pt-1 text-base font-bold text-foreground">
                   <span>TOTAL A COBRAR:</span>
                   <span>Bs. {totalGeneral.toFixed(2)}</span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 w-full">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleGuardarCotizacion}
-                  disabled={cart.length === 0 || isProcessing}
-                  className="w-full text-xs"
-                >
-                  <FileText className="size-3.5 mr-1" />
-                  Cotizar (Proforma)
-                </Button>
-
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => setIsCheckoutModalOpen(true)}
-                  disabled={cart.length === 0 || isProcessing}
-                  className="w-full text-xs font-semibold"
-                >
-                  Cobrar Ahora
-                  <ChevronRight className="size-3.5 ml-1" />
-                </Button>
-              </div>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setIsCheckoutModalOpen(true)}
+                disabled={cart.length === 0 || isProcessing}
+                className="w-full text-xs font-semibold"
+              >
+                Cobrar Ahora
+                <ChevronRight className="ml-1 size-3.5" />
+              </Button>
             </CardFooter>
           </Card>
         </div>
       </div>
 
-      {/* MODAL CHECKOUT */}
       <Dialog open={isCheckoutModalOpen} onOpenChange={setIsCheckoutModalOpen}>
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Procesar Cobro de Venta</DialogTitle>
             <DialogDescription>
-              Total a liquidar: <strong className="text-foreground text-base">Bs. {totalGeneral.toFixed(2)}</strong>
+              Total a liquidar:{" "}
+              <strong className="text-base text-foreground">Bs. {totalGeneral.toFixed(2)}</strong>
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleConfirmCheckout} className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Modalidad de Pago (SRS-POS-003, 004, 017)</Label>
+              <Label>Modalidad de Pago</Label>
               <Tabs
                 value={metodoPago}
                 onValueChange={(v) => {
@@ -965,7 +1059,7 @@ export const Venta = () => {
                   setMontoQr("")
                 }}
               >
-                <TabsList className="grid grid-cols-3 w-full">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="Efectivo">Efectivo</TabsTrigger>
                   <TabsTrigger value="QR">QR Bancario</TabsTrigger>
                   <TabsTrigger value="Pago Mixto">Pago Mixto</TabsTrigger>
@@ -974,7 +1068,7 @@ export const Venta = () => {
             </div>
 
             {metodoPago === "Efectivo" && (
-              <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/20">
+              <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-3">
                 <Label htmlFor="montoRecibido">Monto Recibido en Efectivo (Bs.) *</Label>
                 <Input
                   id="montoRecibido"
@@ -987,8 +1081,8 @@ export const Venta = () => {
                   required
                 />
                 {parseFloat(montoRecibidoEfectivo) >= totalGeneral && (
-                  <div className="flex items-center justify-between text-xs pt-1 font-medium text-emerald-600 dark:text-emerald-400">
-                    <span>Cambio / Vuelto a entregar (SRS-POS-004):</span>
+                  <div className="flex items-center justify-between pt-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                    <span>Cambio / Vuelto a entregar:</span>
                     <span className="text-sm font-bold">
                       Bs. {(parseFloat(montoRecibidoEfectivo) - totalGeneral).toFixed(2)}
                     </span>
@@ -998,17 +1092,18 @@ export const Venta = () => {
             )}
 
             {metodoPago === "QR" && (
-              <div className="p-3 rounded-lg border border-border bg-muted/20 text-xs text-muted-foreground space-y-1">
-                <p className="font-semibold text-foreground">Liquidación QR Bancaria (SRS-POS-003)</p>
+              <div className="space-y-1 rounded-lg border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+                <p className="font-semibold text-foreground">Liquidación QR Bancaria</p>
                 <p>
-                  El monto íntegro de <strong>Bs. {totalGeneral.toFixed(2)}</strong> se registrará en la cuenta de conciliación bancaria sin afectar el cajón físico.
+                  El monto íntegro de <strong>Bs. {totalGeneral.toFixed(2)}</strong> se registrará sin
+                  afectar el cajón físico.
                 </p>
               </div>
             )}
 
             {metodoPago === "Pago Mixto" && (
-              <div className="space-y-3 p-3 rounded-lg border border-border bg-muted/20 text-xs">
-                <p className="font-semibold text-foreground">Fraccionamiento Simultáneo (SRS-POS-017)</p>
+              <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3 text-xs">
+                <p className="font-semibold text-foreground">Fraccionamiento Simultáneo</p>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <Label htmlFor="fracEfectivo">Fracción Efectivo (Bs.)</Label>
@@ -1036,17 +1131,20 @@ export const Venta = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-1 border-t border-border font-medium">
+                <div className="flex items-center justify-between border-t border-border pt-1 font-medium">
                   <span>Suma Entregada:</span>
                   <span>
-                    Bs. {((parseFloat(montoRecibidoEfectivo) || 0) + (parseFloat(montoQr) || 0)).toFixed(2)}
+                    Bs.{" "}
+                    {(
+                      (parseFloat(montoRecibidoEfectivo) || 0) + (parseFloat(montoQr) || 0)
+                    ).toFixed(2)}
                   </span>
                 </div>
               </div>
             )}
 
             {requiereBypassMargen && (
-              <div className="space-y-2.5 p-3 rounded-lg border border-amber-500/40 bg-amber-500/10 text-xs">
+              <div className="space-y-2.5 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
                 <div className="flex items-center gap-1.5 font-semibold text-amber-800 dark:text-amber-300">
                   <ShieldAlert className="size-4" />
                   <span>Autorización Obligatoria de Administrador (Bypass Margen)</span>
@@ -1067,7 +1165,7 @@ export const Venta = () => {
                     required
                   />
                   <Textarea
-                    placeholder="Justificación técnica obligatoria de la excepción de precio (SRS-POS-008)..."
+                    placeholder="Justificación técnica obligatoria de la excepción de precio..."
                     value={justificacionBypass}
                     onChange={(e) => setJustificacionBypass(e.target.value)}
                     rows={2}
@@ -1087,72 +1185,147 @@ export const Venta = () => {
                 Cancelar
               </Button>
               <Button type="submit" disabled={isProcessing}>
-                {isProcessing ? "Confirmando Venta..." : "Confirmar e Imprimir Nota"}
+                {isProcessing ? "Confirmando Venta..." : "Confirmar Venta"}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* MODAL CARGAR PROFORMAS */}
       <Dialog open={isProformaModalOpen} onOpenChange={setIsProformaModalOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Recuperar Proforma Comercial en Carrito</DialogTitle>
+            <DialogTitle>Cargar Proforma al Carrito</DialogTitle>
             <DialogDescription>
-              SRS-POS-015: Busca cotizaciones pendientes por NIT / Cédula del cliente para cargarlas al POS.
+              Busca por CI/NIT, nombre del cliente o código de proforma.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder="Ingresa NIT / Cédula..."
-                value={proformaCiSearch}
-                onChange={(e) => setProformaCiSearch(e.target.value)}
+            {isLoadingProformas ? (
+              <Skeleton className="h-10 w-full" />
+            ) : (
+              <SmartCombobox
+                options={proformaOptions}
+                value={proformaOptionId}
+                onValueChange={setProformaOptionId}
+                placeholder="Buscar proforma por CI, nombre o código..."
+                emptyMessage="No se encontraron proformas pendientes."
+                className="w-full"
               />
-              <Button type="button" onClick={handleBuscarProformas} disabled={isSearchingProformas}>
-                Buscar
-              </Button>
-            </div>
+            )}
 
-            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-              {isSearchingProformas ? (
-                <Skeleton className="h-12 w-full" />
-              ) : proformasEncontradas.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-4">
-                  No se encontraron cotizaciones pendientes para el criterio ingresado.
-                </p>
-              ) : (
-                proformasEncontradas.map((cot) => (
-                  <div
-                    key={cot.id}
-                    className="p-3 rounded-lg border border-border bg-card flex items-center justify-between text-xs"
-                  >
-                    <div>
+            {proformaOptionId ? (
+              <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs">
+                {(() => {
+                  const cot = proformas.find((item) => item.id === proformaOptionId)
+                  if (!cot) return null
+                  return (
+                    <>
                       <p className="font-semibold text-foreground">{cot.codigoProforma}</p>
                       <p className="text-muted-foreground">
                         Cliente: {cot.clienteNombre} (NIT: {cot.clienteCi})
                       </p>
-                      <p className="text-muted-foreground">Total: Bs. {cot.totalEstimado.toFixed(2)}</p>
-                    </div>
-                    <Button
-                      type="button"
-                      size="xs"
-                      onClick={() => handleCargarProformaEnCarrito(cot)}
-                    >
-                      Cargar al POS
-                    </Button>
-                  </div>
-                ))
-              )}
-            </div>
+                      <p className="text-muted-foreground">
+                        Total: Bs. {cot.totalEstimado.toFixed(2)}
+                      </p>
+                    </>
+                  )
+                })()}
+              </div>
+            ) : null}
           </div>
 
           <DialogFooter className="pt-2">
             <Button type="button" variant="outline" onClick={() => setIsProformaModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmLoadProforma}
+              disabled={!proformaOptionId || isLoadingProformas}
+            >
+              Cargar al POS
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isPdfModalOpen}
+        onOpenChange={(open) => {
+          setIsPdfModalOpen(open)
+          if (!open) {
+            setPdfUrl((prev) => {
+              if (prev) window.URL.revokeObjectURL(prev)
+              return null
+            })
+          }
+        }}
+      >
+        <DialogContent
+          className="flex h-[90vh] w-[90vw] max-w-[90vw] flex-col gap-0 overflow-hidden p-0 sm:max-w-[90vw]"
+          showCloseButton
+        >
+          <DialogHeader className="shrink-0 border-b border-border px-4 py-3">
+            <DialogTitle>
+              Nota de venta {ventaCompletada?.codigoNotaVenta ?? ""}
+            </DialogTitle>
+            <DialogDescription>
+              Visualiza, descarga o imprime el comprobante de la venta.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="min-h-0 flex-1 bg-muted/20 p-3">
+            {isLoadingPdf ? (
+              <div className="flex h-full items-center justify-center">
+                <Skeleton className="h-full w-full" />
+              </div>
+            ) : pdfUrl ? (
+              <iframe
+                ref={pdfIframeRef}
+                src={pdfUrl}
+                title="Nota de venta PDF"
+                className="h-full w-full rounded-md border border-border bg-background"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                No se pudo cargar el PDF.
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-t border-border bg-muted/50 p-3 sm:justify-between">
+            <Button type="button" variant="outline" onClick={() => setIsPdfModalOpen(false)}>
               Cerrar
             </Button>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!ventaCompletada || isLoadingPdf}
+                onClick={() => {
+                  if (!ventaCompletada) return
+                  void descargarNotaVentaPdf(
+                    ventaCompletada.id,
+                    ventaCompletada.codigoNotaVenta
+                  )
+                }}
+                className="gap-1.5"
+              >
+                <Download className="size-4" />
+                Descargar PDF
+              </Button>
+              <Button
+                type="button"
+                disabled={!pdfUrl || isLoadingPdf}
+                onClick={handlePrintPdf}
+                className="gap-1.5"
+              >
+                <Printer className="size-4" />
+                Imprimir
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1162,8 +1335,9 @@ export const Venta = () => {
         onOpenChange={setIsClientModalOpen}
         mode="create"
         onSuccess={(nuevo) => {
+          setClientes((prev) => [nuevo, ...prev])
           setClienteSeleccionado(nuevo)
-          setCiSearch(nuevo.ci || "")
+          setClienteOptionId(nuevo.id)
         }}
       />
     </div>

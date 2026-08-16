@@ -22,15 +22,26 @@ export async function procesarCheckout(payload: CheckoutRequest): Promise<Venta>
   })
 }
 
-export async function descargarNotaVentaPdf(id: string, codigo: string): Promise<void> {
+async function fetchNotaVentaPdfBlob(id: string): Promise<Blob> {
   const token = getToken()
   const response = await fetch(`${API_BASE_URL}/ventas/${id}/pdf`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   })
+
   if (!response.ok) {
-    throw new Error("No se pudo descargar el comprobante de venta")
+    throw new Error("No se pudo obtener el comprobante de venta")
   }
-  const blob = await response.blob()
+
+  return response.blob()
+}
+
+export async function getNotaVentaPdfObjectUrl(id: string): Promise<string> {
+  const blob = await fetchNotaVentaPdfBlob(id)
+  return window.URL.createObjectURL(blob)
+}
+
+export async function descargarNotaVentaPdf(id: string, codigo: string): Promise<void> {
+  const blob = await fetchNotaVentaPdfBlob(id)
   const url = window.URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = url

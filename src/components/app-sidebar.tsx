@@ -1,7 +1,6 @@
 import * as React from "react"
 import {
   Archive,
-  ArrowLeftRight,
   BarChart3,
   BookUser,
   Boxes,
@@ -17,6 +16,7 @@ import {
   Monitor,
   Moon,
   Package,
+  PackagePlus,
   ShoppingCart,
   Sun,
   Tags,
@@ -87,12 +87,12 @@ function getNavigationSections(rol?: string): NavSection[] {
       {
         items: [
           { title: "Inicio", url: "/inicio", icon: House },
+          { title: "Punto de Venta", url: "/venta", icon: ShoppingCart },
         ],
       },
       {
         title: "OPERACIONES",
         items: [
-          { title: "Ventas", url: "/venta", icon: ArrowLeftRight },
           { title: "Cotización", url: "/cotizacion", icon: ClipboardList },
           { title: "Existencias (Stock)", url: "/existencias", icon: Boxes },
         ],
@@ -120,14 +120,14 @@ function getNavigationSections(rol?: string): NavSection[] {
     {
       items: [
         { title: "Inicio", url: "/inicio", icon: House },
+        { title: "Punto de Venta", url: "/venta", icon: ShoppingCart },
       ],
     },
     {
       title: "OPERACIONES",
       items: [
-        { title: "Ventas", url: "/venta", icon: ArrowLeftRight },
         { title: "Cotización", url: "/cotizacion", icon: ClipboardList },
-        { title: "Compras", url: "/compra", icon: ShoppingCart },
+        { title: "Compras", url: "/compra", icon: PackagePlus },
         {
           title: "Taller / Recepciones",
           url: "/recepciones",

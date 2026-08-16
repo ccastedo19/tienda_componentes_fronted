@@ -20,8 +20,7 @@ const routes: Record<
     title: "Inicio",
   },
   "/venta": {
-    title: "Ventas",
-    parent: "Operaciones",
+    title: "Punto de Venta",
   },
   "/cotizacion": {
     title: "Cotización",

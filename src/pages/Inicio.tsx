@@ -102,9 +102,6 @@ export const Inicio = () => {
             Panel de control general y análisis ejecutivo del negocio en tiempo real.
           </p>
         </div>
-        <Badge variant={isAdmin ? "default" : "secondary"}>
-          Rol: {user?.rol}
-        </Badge>
       </div>
 
       {/* KPI CARDS: Métricas del Día (SRS-ANA-001) */}
