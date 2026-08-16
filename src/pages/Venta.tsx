@@ -709,21 +709,22 @@ export const Venta = () => {
           </div>
 
           {catalogoTab === "productos" ? (
-            <div className="grid max-h-[600px] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3">
+            <div className="grid max-h-[600px] grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 xl:grid-cols-4">
               {filteredProductos.map((prod) => {
                 const isOutOfStock = prod.stockDisponible <= 0
                 return (
                   <Card
                     key={prod.id}
+                    size="sm"
                     onClick={() => !isOutOfStock && void handleAddProducto(prod)}
-                    className={`border-border select-none transition-all ${
+                    className={`gap-0 rounded-lg border border-border/80 bg-card py-0 shadow-none ring-0 select-none transition-colors ${
                       isOutOfStock
-                        ? "cursor-not-allowed bg-muted/30 opacity-50"
-                        : "cursor-pointer hover:border-foreground/40 hover:shadow-xs active:scale-[0.99]"
+                        ? "cursor-not-allowed bg-muted/40 opacity-55"
+                        : "cursor-pointer hover:border-foreground/25 hover:bg-muted/30 active:scale-[0.99]"
                     }`}
                   >
-                    <CardHeader className="p-3 pb-1.5">
-                      <div className="mb-2 flex aspect-square items-center justify-center overflow-hidden rounded-md bg-muted">
+                    <CardHeader className="gap-1.5 p-2 pb-1.5">
+                      <div className="flex h-16 items-center justify-center overflow-hidden rounded-md border border-border/60 bg-muted/50">
                         {prod.imagenUrl ? (
                           <img
                             src={prod.imagenUrl}
@@ -731,23 +732,26 @@ export const Venta = () => {
                             className="h-full w-full object-cover"
                           />
                         ) : (
-                          <Cpu className="size-8 text-muted-foreground" />
+                          <Cpu className="size-5 text-muted-foreground" />
                         )}
                       </div>
-                      <Badge variant="outline" className="w-fit font-mono text-[10px]">
+                      <Badge
+                        variant="outline"
+                        className="h-4 w-fit px-1 font-mono text-[9px] leading-none"
+                      >
                         {prod.skuUnico}
                       </Badge>
-                      <CardTitle className="mt-1 line-clamp-2 text-xs font-semibold">
+                      <CardTitle className="line-clamp-2 text-[11px] leading-tight font-semibold">
                         {prod.nombreComercial}
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-3 pt-0">
-                      <div className="mt-2 flex items-center justify-between">
-                        <span className="text-sm font-bold text-foreground">
+                    <CardContent className="p-2 pt-0">
+                      <div className="flex items-center justify-between gap-1 border-t border-border/70 pt-1.5">
+                        <span className="text-xs font-bold text-foreground">
                           Bs. {prod.precioVenta.toFixed(2)}
                         </span>
                         <span
-                          className={`text-[11px] font-medium ${
+                          className={`text-[10px] font-medium ${
                             isOutOfStock ? "text-destructive" : "text-muted-foreground"
                           }`}
                         >
@@ -760,15 +764,16 @@ export const Venta = () => {
               })}
             </div>
           ) : (
-            <div className="grid max-h-[600px] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3">
+            <div className="grid max-h-[600px] grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 xl:grid-cols-4">
               {filteredServicios.map((serv) => (
                 <Card
                   key={serv.id}
+                  size="sm"
                   onClick={() => handleAddServicio(serv)}
-                  className="cursor-pointer border-border transition-all hover:border-foreground/40 hover:shadow-xs active:scale-[0.99]"
+                  className="cursor-pointer gap-0 rounded-lg border border-border/80 bg-card py-0 shadow-none ring-0 transition-colors hover:border-foreground/25 hover:bg-muted/30 active:scale-[0.99]"
                 >
-                  <CardHeader className="p-3 pb-1.5">
-                    <div className="mb-2 flex aspect-square items-center justify-center overflow-hidden rounded-md bg-muted">
+                  <CardHeader className="gap-1.5 p-2 pb-1.5">
+                    <div className="flex h-16 items-center justify-center overflow-hidden rounded-md border border-border/60 bg-muted/50">
                       {serv.imagenUrl ? (
                         <img
                           src={serv.imagenUrl}
@@ -776,22 +781,25 @@ export const Venta = () => {
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <Wrench className="size-8 text-muted-foreground" />
+                        <Wrench className="size-5 text-muted-foreground" />
                       )}
                     </div>
-                    <Badge variant="secondary" className="w-fit text-[10px]">
-                      Servicio Técnico
+                    <Badge
+                      variant="secondary"
+                      className="h-4 w-fit px-1 text-[9px] leading-none"
+                    >
+                      Servicio
                     </Badge>
-                    <CardTitle className="mt-1 line-clamp-2 text-xs font-semibold">
+                    <CardTitle className="line-clamp-2 text-[11px] leading-tight font-semibold">
                       {serv.nombre}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="p-3 pt-0">
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-sm font-bold text-foreground">
+                  <CardContent className="p-2 pt-0">
+                    <div className="flex items-center justify-between gap-1 border-t border-border/70 pt-1.5">
+                      <span className="text-xs font-bold text-foreground">
                         Bs. {serv.precioBaseSugerido.toFixed(2)}
                       </span>
-                      <span className="text-[11px] text-muted-foreground">Mano de obra</span>
+                      <span className="text-[10px] text-muted-foreground">Mano de obra</span>
                     </div>
                   </CardContent>
                 </Card>
