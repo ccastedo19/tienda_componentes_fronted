@@ -131,7 +131,7 @@ export const Servicios = () => {
         header: ({ column }) => <DataTableColumnHeader column={column} title="Precio Base Sugerido" />,
         cell: ({ row }) => (
           <span className="font-semibold text-foreground">
-            ${row.original.precioBaseSugerido.toFixed(2)}
+            Bs {row.original.precioBaseSugerido.toFixed(2)}
           </span>
         ),
       },

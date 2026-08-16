@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { Navigate } from "react-router-dom"
 import {
   TrendingUp,
   AlertTriangle,
@@ -31,7 +32,7 @@ import type {
 } from "@/types/analitica"
 
 export const Inicio = () => {
-  const { user } = useAuth()
+  const { user, isLoading: isAuthLoading } = useAuth()
   const isAdmin = user?.rol?.toLowerCase() === "administrador"
 
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
@@ -43,38 +44,42 @@ export const Inicio = () => {
 
   const [isLoading, setIsLoading] = useState(true)
 
-  const loadData = async () => {
+  useEffect(() => {
+    if (!isAdmin) return
+
+    let isMounted = true
     setIsLoading(true)
-    try {
-      if (isAdmin) {
-        const [m, r, prod, prov, sm, roi] = await Promise.all([
-          getDashboardMetrics().catch(() => null),
-          getRentabilidad().catch(() => null),
-          getProductividad().catch(() => []),
-          getRendimientoProveedores().catch(() => []),
-          getStockMuerto().catch(() => []),
-          getRoiTaller().catch(() => null),
-        ])
+
+    Promise.all([
+      getDashboardMetrics().catch(() => null),
+      getRentabilidad().catch(() => null),
+      getProductividad().catch(() => []),
+      getRendimientoProveedores().catch(() => []),
+      getStockMuerto().catch(() => []),
+      getRoiTaller().catch(() => null),
+    ])
+      .then(([m, r, prod, prov, sm, roi]) => {
+        if (!isMounted) return
         setMetrics(m)
         setRentabilidad(r)
         setProductividad(prod)
         setProveedores(prov)
         setStockMuerto(sm)
         setRoiTaller(roi)
-      } else {
-        const m = await getDashboardMetrics().catch(() => null)
-        setMetrics(m)
-      }
-    } catch {
-      // error handling
-    } finally {
-      setIsLoading(false)
-    }
-  }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) setIsLoading(false)
+      })
 
-  useEffect(() => {
-    void loadData()
+    return () => {
+      isMounted = false
+    }
   }, [isAdmin])
+
+  if (!isAuthLoading && !isAdmin) {
+    return <Navigate to="/venta" replace />
+  }
 
   if (isLoading) {
     return (

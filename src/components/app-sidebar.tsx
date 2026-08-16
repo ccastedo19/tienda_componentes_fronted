@@ -87,7 +87,6 @@ function getNavigationSections(rol?: string): NavSection[] {
     return [
       {
         items: [
-          { title: "Inicio", url: "/inicio", icon: House },
           { title: "Punto de Venta", url: "/venta", icon: ShoppingCart },
         ],
       },

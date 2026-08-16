@@ -25,7 +25,7 @@ Gestionar y mostrar componentes de una tienda con una interfaz moderna, accesibl
 <!-- AUTO:metadata:START -->
 - **Proyecto**: tienda_componentes_full
 - **Versión**: 0.0.0
-- **Última actualización automática**: 2026-08-16T12:41:39.698Z
+- **Última actualización automática**: 2026-08-16T12:56:48.916Z
 - **Última modificación en `src/`**: 2026-08-16T01:25:50.518Z
 <!-- AUTO:metadata:END -->
 
