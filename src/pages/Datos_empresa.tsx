@@ -16,7 +16,7 @@ export const Datos_empresa = () => {
   const [direccion, setDireccion] = useState("")
   const [sitioWeb, setSitioWeb] = useState("")
   const [pieNotaVenta, setPieNotaVenta] = useState("")
-  
+
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
@@ -217,8 +217,8 @@ export const Datos_empresa = () => {
               </>
             )}
           </CardContent>
-          <CardFooter className="p-4 pt-0">
-            <Button type="submit" disabled={isLoading || isSaving} className="font-semibold gap-1.5">
+          <CardFooter className="p-4 pt-3 flex items-center">
+            <Button type="submit" disabled={isLoading || isSaving} className="font-semibold gap-1.5 cursor-pointer">
               {isSaving ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />

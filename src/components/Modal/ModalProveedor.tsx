@@ -181,11 +181,12 @@ export function ModalProveedor({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              className="cursor-pointer"
               disabled={isLoading}
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" className="cursor-pointer" disabled={isLoading}>
               {isLoading ? "Guardando..." : mode === "create" ? "Registrar Proveedor" : "Guardar Cambios"}
             </Button>
           </DialogFooter>

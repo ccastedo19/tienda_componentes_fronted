@@ -837,11 +837,10 @@ export const Venta = () => {
                     key={prod.id}
                     size="sm"
                     onClick={() => !isOutOfStock && void handleAddProducto(prod)}
-                    className={`gap-0 rounded-lg border border-border/80 bg-card py-0 shadow-none ring-0 select-none transition-colors ${
-                      isOutOfStock
-                        ? "cursor-not-allowed bg-muted/40 opacity-55"
-                        : "cursor-pointer hover:border-foreground/25 hover:bg-muted/30 active:scale-[0.99]"
-                    }`}
+                    className={`gap-0 rounded-lg border border-border/80 bg-card py-0 shadow-none ring-0 select-none transition-colors ${isOutOfStock
+                      ? "cursor-not-allowed bg-muted/40 opacity-55"
+                      : "cursor-pointer hover:border-foreground/25 hover:bg-muted/30 active:scale-[0.99]"
+                      }`}
                   >
                     <CardHeader className="gap-1.5 p-2 pb-1.5">
                       <div className="flex h-16 items-center justify-center overflow-hidden rounded-md border border-border/60 bg-muted/50">
@@ -871,9 +870,8 @@ export const Venta = () => {
                           Bs. {prod.precioVenta.toFixed(2)}
                         </span>
                         <span
-                          className={`text-[10px] font-medium ${
-                            isOutOfStock ? "text-destructive" : "text-muted-foreground"
-                          }`}
+                          className={`text-[10px] font-medium ${isOutOfStock ? "text-destructive" : "text-muted-foreground"
+                            }`}
                         >
                           {isOutOfStock ? "Agotado" : `${prod.stockDisponible} disp.`}
                         </span>
@@ -1042,10 +1040,10 @@ export const Venta = () => {
                   const serieOptions: SmartComboboxOption[] =
                     item.type === "producto"
                       ? item.seriesDisponibles.map((s) => ({
-                          value: s.id,
-                          label: s.numeroSerieAlfanumerico,
-                          keywords: s.numeroSerieAlfanumerico,
-                        }))
+                        value: s.id,
+                        label: s.numeroSerieAlfanumerico,
+                        keywords: s.numeroSerieAlfanumerico,
+                      }))
                       : []
 
                   return (
@@ -1182,10 +1180,10 @@ export const Venta = () => {
 
               <Button
                 type="button"
-                size="sm"
+                size="lg"
                 onClick={() => setIsCheckoutModalOpen(true)}
                 disabled={cart.length === 0 || isProcessing}
-                className="w-full text-xs font-semibold"
+                className="w-full cursor-pointer text-sm font-semibold"
               >
                 Cobrar Ahora
                 <ChevronRight className="ml-1 size-3.5" />
