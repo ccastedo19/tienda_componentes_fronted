@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { AlertOctagon, Plus, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { SmartCombobox, type SmartComboboxOption } from "@/components/ui/smart-combobox"
 import { Textarea } from "@/components/ui/textarea"
 import { ApiRequestError } from "@/lib/api/client"
 import { createMerma } from "@/services/merma.service"
@@ -50,7 +51,7 @@ export function ModalMerma({
 
   // Para Pérdida Física
   const [lineasFisicas, setLineasFisicas] = useState<LineaMermaFisica[]>([])
-  const [selectedProdId, setSelectedProdId] = useState("")
+  const [selectedProdId, setSelectedProdId] = useState<string | null>(null)
 
   // Para Pérdida en Efectivo Mostrador
   const [montoPerdidaEfectivo, setMontoPerdidaEfectivo] = useState("")
@@ -58,18 +59,30 @@ export function ModalMerma({
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const productoOptions = useMemo<SmartComboboxOption[]>(() => {
+    return productos
+      .filter((p) => p.stockActual > 0)
+      .map((p) => ({
+        value: p.id,
+        label: p.nombreComercial,
+        description: `Código: ${p.skuUnico} • Stock actual: ${p.stockActual} un. • Costo: Bs. ${p.precioCosto.toFixed(2)}`,
+        keywords: `${p.nombreComercial} ${p.skuUnico}`,
+      }))
+  }, [productos])
+
   useEffect(() => {
     if (open) {
       setTipoMerma("Pérdida Física")
       setObservacion("")
       setLineasFisicas([])
-      setSelectedProdId("")
+      setSelectedProdId(null)
       setMontoPerdidaEfectivo("")
       setError(null)
     }
   }, [open])
 
   const handleAddProductoFisico = () => {
+    if (!selectedProdId) return
     const prod = productos.find((p) => p.id === selectedProdId)
     if (!prod) return
 
@@ -83,7 +96,7 @@ export function ModalMerma({
         costoUnitario: prod.precioCosto,
       },
     ])
-    setSelectedProdId("")
+    setSelectedProdId(null)
   }
 
   const handleRemoveLineaFisica = (idx: number) => {
@@ -190,7 +203,7 @@ export function ModalMerma({
                   Pérdida Física (Componentes dañados/averiados - Descuenta stock y Kardex)
                 </SelectItem>
                 <SelectItem value="Pérdida en Efectivo Mostrador">
-                  Pérdida en Efectivo Mostrador (Descuenta del arqueo de caja activa)
+                  Pérdida en Efectivo Mostrador (Deducción directa de mostrador/caja)
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -212,22 +225,15 @@ export function ModalMerma({
             <div className="space-y-3 pt-2 border-t border-border">
               <Label className="text-xs font-semibold">Artículos Físicos Dañados / Mermados</Label>
               <div className="flex items-center gap-2">
-                <Select value={selectedProdId} onValueChange={(val) => setSelectedProdId(val ?? "")}>
-                  <SelectTrigger className="w-full text-xs">
-                    <SelectValue placeholder="Seleccionar producto del inventario...">
-                      {productos.find((p) => p.id === selectedProdId)?.nombreComercial}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {productos
-                      .filter((p) => p.stockActual > 0)
-                      .map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.nombreComercial} (Stock actual: {p.stockActual} un.)
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex-1">
+                  <SmartCombobox
+                    options={productoOptions}
+                    value={selectedProdId}
+                    onValueChange={setSelectedProdId}
+                    placeholder="Buscar producto averiado por nombre o SKU..."
+                    emptyMessage="No hay productos con stock actual para declarar merma."
+                  />
+                </div>
                 <Button
                   type="button"
                   size="sm"
@@ -277,7 +283,7 @@ export function ModalMerma({
             </div>
           ) : (
             <div className="space-y-2 pt-2 border-t border-border">
-              <Label htmlFor="montoEf">Monto en Efectivo a Deducir de la Caja Activa (Bs.) *</Label>
+              <Label htmlFor="montoEf">Monto en Efectivo a Deducir (Bs.) *</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
                   Bs.
@@ -295,7 +301,7 @@ export function ModalMerma({
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                SRS-CAJ-006: Este importe se restará automáticamente del saldo esperado de la sesión de caja activa.
+                SRS-CAJ-006: Este importe se registrará como pérdida contable y se restará de la sesión de caja activa si existe una abierta.
               </p>
             </div>
           )}

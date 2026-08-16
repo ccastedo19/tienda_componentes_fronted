@@ -20,7 +20,7 @@ import {
   ShieldAlert,
   X,
 } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 
 import { ModalCliente } from "@/components/Modal/ModalCliente"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -45,6 +45,7 @@ import { ApiRequestError } from "@/lib/api/client"
 import { getCajaActiva } from "@/services/caja.service"
 import { getClientes } from "@/services/cliente.service"
 import { getCotizaciones } from "@/services/cotizacion.service"
+import { getOrdenesTecnicas } from "@/services/ordenTecnica.service"
 import { getProductos, getSeriesByProducto } from "@/services/producto.service"
 import { getServicios } from "@/services/servicio.service"
 import {
@@ -55,6 +56,7 @@ import {
 import type { Caja } from "@/types/caja"
 import type { Cliente } from "@/types/cliente"
 import type { Cotizacion } from "@/types/cotizacion"
+import type { OrdenTecnica } from "@/types/ordenTecnica"
 import type { Producto, ProductoSerie } from "@/types/producto"
 import type { Servicio } from "@/types/servicio"
 import type { CheckoutRequest, Venta as VentaModel } from "@/types/venta"
@@ -95,6 +97,7 @@ export const Venta = () => {
 
   const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null)
   const [clienteOptionId, setClienteOptionId] = useState<string | null>(CLIENTE_GENERICO_VALUE)
+  const location = useLocation()
   const [isClientModalOpen, setIsClientModalOpen] = useState(false)
 
   const [isProformaModalOpen, setIsProformaModalOpen] = useState(false)
@@ -102,6 +105,12 @@ export const Venta = () => {
   const [proformaOptionId, setProformaOptionId] = useState<string | null>(null)
   const [isLoadingProformas, setIsLoadingProformas] = useState(false)
   const [loadedCotizacionId, setLoadedCotizacionId] = useState<string | null>(null)
+
+  const [isOrdenModalOpen, setIsOrdenModalOpen] = useState(false)
+  const [ordenesTecnicas, setOrdenesTecnicas] = useState<OrdenTecnica[]>([])
+  const [ordenOptionId, setOrdenOptionId] = useState<string | null>(null)
+  const [isLoadingOrdenes, setIsLoadingOrdenes] = useState(false)
+  const [ordenTecnicaActiva, setOrdenTecnicaActiva] = useState<OrdenTecnica | null>(null)
 
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false)
   const [metodoPago, setMetodoPago] = useState<"Efectivo" | "QR" | "Pago Mixto">("Efectivo")
@@ -193,6 +202,15 @@ export const Venta = () => {
     }))
   }, [proformas])
 
+  const ordenOptions = useMemo<SmartComboboxOption[]>(() => {
+    return ordenesTecnicas.map((ord) => ({
+      value: ord.id,
+      label: `${ord.codigoOrden} — ${ord.clienteNombre}`,
+      description: `CI/NIT: ${ord.clienteCi} • Estado: ${ord.estado} • Repuestos: ${ord.componentes?.length || 0} • Servicios: ${ord.servicios?.length || 0}`,
+      keywords: `${ord.codigoOrden} ${ord.clienteCi} ${ord.clienteNombre}`,
+    }))
+  }, [ordenesTecnicas])
+
   const handleSelectCliente = (value: string | null) => {
     if (value === null) {
       // Limpia el input para buscar; se mantiene como genérico hasta elegir otro
@@ -224,10 +242,28 @@ export const Venta = () => {
     }
   }
 
+  const loadOrdenesTecnicas = async () => {
+    setIsLoadingOrdenes(true)
+    try {
+      const data = await getOrdenesTecnicas()
+      setOrdenesTecnicas(data.filter((ord) => ord.estado !== "Cancelada"))
+    } catch {
+      setOrdenesTecnicas([])
+    } finally {
+      setIsLoadingOrdenes(false)
+    }
+  }
+
   const handleOpenProformaModal = () => {
     setProformaOptionId(null)
     setIsProformaModalOpen(true)
     void loadProformas()
+  }
+
+  const handleOpenOrdenModal = () => {
+    setOrdenOptionId(null)
+    setIsOrdenModalOpen(true)
+    void loadOrdenesTecnicas()
   }
 
   const handleCargarProformaEnCarrito = (cot: Cotizacion) => {
@@ -293,6 +329,78 @@ export const Venta = () => {
       handleCargarProformaEnCarrito(cot)
     }
   }
+
+  const handleCargarOrdenTecnicaEnCarrito = (orden: OrdenTecnica) => {
+    const newCart: CartItem[] = []
+
+    if (orden.componentes) {
+      for (const c of orden.componentes) {
+        const prod = productos.find((item) => item.id === c.productoId)
+        if (prod) {
+          newCart.push({
+            type: "producto",
+            producto: prod,
+            cantidad: c.cantidad,
+            tipoDescuento: null,
+            valorDescuento: 0,
+            selectedSerieId: null,
+            seriesDisponibles: [],
+          })
+        }
+      }
+    }
+
+    if (orden.servicios) {
+      for (const s of orden.servicios) {
+        const serv = servicios.find((item) => item.id === s.servicioId)
+        if (serv) {
+          newCart.push({
+            type: "servicio",
+            servicio: serv,
+            precioFinalAplicado: s.precioAplicado,
+            tipoDescuento: null,
+            valorDescuento: 0,
+          })
+        }
+      }
+    }
+
+    setCart(newCart)
+    setOrdenTecnicaActiva(orden)
+    setLoadedCotizacionId(null)
+
+    if (orden.clienteId) {
+      const cliente = clientes.find((c) => c.id === orden.clienteId)
+      if (cliente) {
+        setClienteSeleccionado(cliente)
+        setClienteOptionId(cliente.id)
+      } else if (orden.clienteCi) {
+        const byCi = clientes.find((c) => c.ci === orden.clienteCi)
+        if (byCi) {
+          setClienteSeleccionado(byCi)
+          setClienteOptionId(byCi.id)
+        }
+      }
+    }
+
+    setIsOrdenModalOpen(false)
+    setOrdenOptionId(null)
+  }
+
+  const handleConfirmLoadOrden = () => {
+    if (!ordenOptionId) return
+    const ord = ordenesTecnicas.find((item) => item.id === ordenOptionId)
+    if (ord) {
+      handleCargarOrdenTecnicaEnCarrito(ord)
+    }
+  }
+
+  useEffect(() => {
+    const stateOrden = location.state?.ordenTecnica as OrdenTecnica | undefined
+    if (stateOrden && productos.length > 0) {
+      handleCargarOrdenTecnicaEnCarrito(stateOrden)
+    }
+  }, [location.state, productos])
 
   const handleAddProducto = async (producto: Producto) => {
     if (producto.stockDisponible <= 0) {
@@ -516,6 +624,7 @@ export const Venta = () => {
     const payload: CheckoutRequest = {
       clienteId: clienteSeleccionado?.id || null,
       cotizacionId: loadedCotizacionId,
+      ordenTecnicaId: ordenTecnicaActiva?.id || null,
       metodoPago,
       montoRecibidoEfectivo: recEfectivo,
       montoQr: recQr,
@@ -549,6 +658,7 @@ export const Venta = () => {
       setClienteSeleccionado(null)
       setClienteOptionId(CLIENTE_GENERICO_VALUE)
       setLoadedCotizacionId(null)
+      setOrdenTecnicaActiva(null)
       setMontoRecibidoEfectivo("")
       setMontoQr("")
       setAdminEmail("")
@@ -629,6 +739,16 @@ export const Venta = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleOpenOrdenModal}
+            className="cursor-pointer gap-1.5"
+          >
+            <Wrench className="size-4" />
+            Cargar Orden Técnica
+          </Button>
           <Button
             type="button"
             variant="outline"
@@ -717,11 +837,10 @@ export const Venta = () => {
                     key={prod.id}
                     size="sm"
                     onClick={() => !isOutOfStock && void handleAddProducto(prod)}
-                    className={`gap-0 rounded-lg border border-border/80 bg-card py-0 shadow-none ring-0 select-none transition-colors ${
-                      isOutOfStock
-                        ? "cursor-not-allowed bg-muted/40 opacity-55"
-                        : "cursor-pointer hover:border-foreground/25 hover:bg-muted/30 active:scale-[0.99]"
-                    }`}
+                    className={`gap-0 rounded-lg border border-border/80 bg-card py-0 shadow-none ring-0 select-none transition-colors ${isOutOfStock
+                      ? "cursor-not-allowed bg-muted/40 opacity-55"
+                      : "cursor-pointer hover:border-foreground/25 hover:bg-muted/30 active:scale-[0.99]"
+                      }`}
                   >
                     <CardHeader className="gap-1.5 p-2 pb-1.5">
                       <div className="flex h-16 items-center justify-center overflow-hidden rounded-md border border-border/60 bg-muted/50">
@@ -751,9 +870,8 @@ export const Venta = () => {
                           Bs. {prod.precioVenta.toFixed(2)}
                         </span>
                         <span
-                          className={`text-[10px] font-medium ${
-                            isOutOfStock ? "text-destructive" : "text-muted-foreground"
-                          }`}
+                          className={`text-[10px] font-medium ${isOutOfStock ? "text-destructive" : "text-muted-foreground"
+                            }`}
                         >
                           {isOutOfStock ? "Agotado" : `${prod.stockDisponible} disp.`}
                         </span>
@@ -874,7 +992,11 @@ export const Venta = () => {
                     type="button"
                     variant="ghost"
                     size="xs"
-                    onClick={() => setCart([])}
+                    onClick={() => {
+                      setCart([])
+                      setOrdenTecnicaActiva(null)
+                      setLoadedCotizacionId(null)
+                    }}
                     className="cursor-pointer text-xs text-destructive hover:bg-destructive/10"
                   >
                     Vaciar
@@ -882,6 +1004,31 @@ export const Venta = () => {
                 )}
               </div>
             </CardHeader>
+
+            {ordenTecnicaActiva && (
+              <div className="m-3 mb-0 flex items-center justify-between gap-2 rounded-md border border-primary/30 bg-primary/10 p-2.5 text-xs text-foreground">
+                <div className="flex items-center gap-2">
+                  <Wrench className="size-4 text-primary shrink-0" />
+                  <div>
+                    <span className="font-semibold text-primary">
+                      Orden Técnica #{ordenTecnicaActiva.codigoOrden}
+                    </span>
+                    <span className="text-muted-foreground ml-1.5">
+                      • Cliente: {ordenTecnicaActiva.clienteNombre}
+                    </span>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => setOrdenTecnicaActiva(null)}
+                  title="Desvincular orden técnica del cobro"
+                >
+                  <X className="size-3 text-muted-foreground hover:text-foreground" />
+                </Button>
+              </div>
+            )}
 
             <CardContent className="max-h-[360px] space-y-3 overflow-y-auto p-3.5">
               {cart.length === 0 ? (
@@ -893,10 +1040,10 @@ export const Venta = () => {
                   const serieOptions: SmartComboboxOption[] =
                     item.type === "producto"
                       ? item.seriesDisponibles.map((s) => ({
-                          value: s.id,
-                          label: s.numeroSerieAlfanumerico,
-                          keywords: s.numeroSerieAlfanumerico,
-                        }))
+                        value: s.id,
+                        label: s.numeroSerieAlfanumerico,
+                        keywords: s.numeroSerieAlfanumerico,
+                      }))
                       : []
 
                   return (
@@ -1033,10 +1180,10 @@ export const Venta = () => {
 
               <Button
                 type="button"
-                size="sm"
+                size="lg"
                 onClick={() => setIsCheckoutModalOpen(true)}
                 disabled={cart.length === 0 || isProcessing}
-                className="w-full text-xs font-semibold"
+                className="w-full cursor-pointer text-sm font-semibold"
               >
                 Cobrar Ahora
                 <ChevronRight className="ml-1 size-3.5" />
@@ -1254,6 +1401,75 @@ export const Venta = () => {
               disabled={!proformaOptionId || isLoadingProformas}
             >
               Cargar al POS
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isOrdenModalOpen} onOpenChange={setIsOrdenModalOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wrench className="size-5 text-primary" />
+              Cargar Orden Técnica de Taller al POS
+            </DialogTitle>
+            <DialogDescription>
+              Selecciona una orden de servicio técnico para liquidar mano de obra y repuestos en el cobro.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            {isLoadingOrdenes ? (
+              <Skeleton className="h-10 w-full" />
+            ) : (
+              <SmartCombobox
+                options={ordenOptions}
+                value={ordenOptionId}
+                onValueChange={setOrdenOptionId}
+                placeholder="Buscar por código de orden, cliente o NIT..."
+                emptyMessage="No se encontraron órdenes técnicas pendientes o activas."
+                className="w-full"
+              />
+            )}
+
+            {ordenOptionId ? (
+              <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs space-y-1">
+                {(() => {
+                  const ord = ordenesTecnicas.find((item) => item.id === ordenOptionId)
+                  if (!ord) return null
+                  const totalServ = ord.servicios?.reduce((acc, s) => acc + (s.precioAplicado || 0), 0) ?? 0
+                  return (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-foreground">{ord.codigoOrden}</span>
+                        <Badge variant="outline">{ord.estado}</Badge>
+                      </div>
+                      <p className="text-muted-foreground">
+                        Cliente: <strong>{ord.clienteNombre}</strong> (CI/NIT: {ord.clienteCi})
+                      </p>
+                      <p className="text-muted-foreground">
+                        Técnico: {ord.tecnicoNombre || "Sin asignar"}
+                      </p>
+                      <div className="pt-1 text-primary font-medium">
+                        {ord.componentes?.length || 0} repuestos retenidos • {ord.servicios?.length || 0} servicios (Bs. {totalServ.toFixed(2)})
+                      </div>
+                    </>
+                  )
+                })()}
+              </div>
+            ) : null}
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button type="button" variant="outline" onClick={() => setIsOrdenModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmLoadOrden}
+              disabled={!ordenOptionId || isLoadingOrdenes}
+            >
+              Cargar Orden al POS
             </Button>
           </DialogFooter>
         </DialogContent>

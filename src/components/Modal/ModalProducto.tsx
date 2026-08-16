@@ -12,13 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { SmartCombobox } from "@/components/ui/smart-combobox"
 import { Textarea } from "@/components/ui/textarea"
 import { ApiRequestError } from "@/lib/api/client"
 import { uploadImage } from "@/services/cloudinary.service"
@@ -192,20 +186,18 @@ export function ModalProducto({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="categoria">Categoría *</Label>
-              <Select value={categoriaId} onValueChange={(val) => setCategoriaId(val ?? "")}>
-                <SelectTrigger id="categoria" className="w-full">
-                  <SelectValue placeholder="Selecciona categoría">
-                    {categorias.find((c) => c.id === categoriaId)?.nombre}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {categorias.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SmartCombobox
+                options={categorias.map((c) => ({
+                  value: c.id,
+                  label: c.nombre,
+                  description: c.categoriaPadreNombre ? `Padre: ${c.categoriaPadreNombre}` : "Categoría Principal",
+                  keywords: `${c.nombre} ${c.categoriaPadreNombre || ""}`,
+                }))}
+                value={categoriaId || null}
+                onValueChange={(val) => setCategoriaId(val ?? "")}
+                placeholder="Buscar categoría..."
+                emptyMessage="No se encontraron categorías."
+              />
             </div>
           </div>
 

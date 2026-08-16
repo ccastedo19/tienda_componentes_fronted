@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Plus, Trash2, ShoppingBag, AlertTriangle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -12,13 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { SmartCombobox, type SmartComboboxOption } from "@/components/ui/smart-combobox"
 import { ApiRequestError } from "@/lib/api/client"
 import { createCompra } from "@/services/compra.service"
 import type { Producto } from "@/types/producto"
@@ -48,25 +42,47 @@ export function ModalCompra({
   productos,
   onSuccess,
 }: ModalCompraProps) {
-  const [proveedorId, setProveedorId] = useState("")
+  const [proveedorId, setProveedorId] = useState<string | null>(null)
   const [lineas, setLineas] = useState<LineaCompra[]>([])
-  const [selectedProdId, setSelectedProdId] = useState("")
+  const [selectedProdId, setSelectedProdId] = useState<string | null>(null)
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const proveedoresActivos = proveedores.filter((p) => p.estado === "Activo")
+  const proveedoresActivos = useMemo(
+    () => proveedores.filter((p) => p.estado === "Activo"),
+    [proveedores]
+  )
+
+  const proveedorOptions = useMemo<SmartComboboxOption[]>(() => {
+    return proveedoresActivos.map((p) => ({
+      value: p.id,
+      label: p.nombreProveedor,
+      description: `Tel: ${p.telefono} • Email: ${p.email || "S/E"}`,
+      keywords: `${p.nombreProveedor} ${p.telefono} ${p.email || ""}`,
+    }))
+  }, [proveedoresActivos])
+
+  const productoOptions = useMemo<SmartComboboxOption[]>(() => {
+    return productos.map((p) => ({
+      value: p.id,
+      label: p.nombreComercial,
+      description: `Código: ${p.skuUnico} • Costo actual: Bs. ${p.precioCosto.toFixed(2)} • Stock: ${p.stockActual}`,
+      keywords: `${p.nombreComercial} ${p.skuUnico}`,
+    }))
+  }, [productos])
 
   useEffect(() => {
     if (open) {
-      setProveedorId(proveedoresActivos[0]?.id || "")
+      setProveedorId(proveedoresActivos[0]?.id || null)
       setLineas([])
-      setSelectedProdId("")
+      setSelectedProdId(null)
       setError(null)
     }
-  }, [open])
+  }, [open, proveedoresActivos])
 
   const handleAddProducto = () => {
+    if (!selectedProdId) return
     const prod = productos.find((p) => p.id === selectedProdId)
     if (!prod) return
 
@@ -81,7 +97,7 @@ export function ModalCompra({
         costoUnitario: prod.precioCosto,
       },
     ])
-    setSelectedProdId("")
+    setSelectedProdId(null)
   }
 
   const handleRemoveLinea = (idx: number) => {
@@ -134,7 +150,7 @@ export function ModalCompra({
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ShoppingBag className="size-5" />
+            <ShoppingBag className="size-5 text-primary" />
             Nueva Compra de Inventario (Recepción)
           </DialogTitle>
           <DialogDescription>
@@ -151,41 +167,27 @@ export function ModalCompra({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="prov">Proveedor Activo (SRS-PRO-002) *</Label>
-            <Select value={proveedorId} onValueChange={(val) => setProveedorId(val ?? "")}>
-              <SelectTrigger id="prov" className="w-full">
-                <SelectValue placeholder="Selecciona proveedor activo">
-                  {proveedoresActivos.find((p) => p.id === proveedorId)?.nombreProveedor}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {proveedoresActivos.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.nombreProveedor} • Tel: {p.telefono}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SmartCombobox
+              options={proveedorOptions}
+              value={proveedorId}
+              onValueChange={setProveedorId}
+              placeholder="Buscar proveedor por nombre o teléfono..."
+              emptyMessage="No se encontraron proveedores activos."
+            />
           </div>
 
           <div className="space-y-1.5">
             <Label>Agregar Producto del Catálogo</Label>
             <div className="flex items-center gap-2">
-              <Select value={selectedProdId} onValueChange={(val) => setSelectedProdId(val ?? "")}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Buscar componente o producto...">
-                    {productos.find((p) => p.id === selectedProdId)
-                      ? `${productos.find((p) => p.id === selectedProdId)?.nombreComercial} (Código: ${productos.find((p) => p.id === selectedProdId)?.skuUnico})`
-                      : undefined}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {productos.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.nombreComercial} (Código: {p.skuUnico} • Costo actual: Bs. {p.precioCosto.toFixed(2)})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex-1">
+                <SmartCombobox
+                  options={productoOptions}
+                  value={selectedProdId}
+                  onValueChange={setSelectedProdId}
+                  placeholder="Buscar producto o componente por nombre o SKU..."
+                  emptyMessage="No se encontraron productos en el catálogo."
+                />
+              </div>
               <Button type="button" onClick={handleAddProducto} disabled={!selectedProdId}>
                 <Plus className="size-4" />
               </Button>
@@ -254,7 +256,7 @@ export function ModalCompra({
                             className="h-7 text-right text-xs"
                           />
                         </td>
-                        <td className="p-2.5 text-right font-bold text-foreground">
+                        <td className="p-2.5 text-right font-medium text-foreground">
                           Bs. {(l.cantidad * l.costoUnitario).toFixed(2)}
                         </td>
                         <td className="p-2.5 text-center">
@@ -263,9 +265,8 @@ export function ModalCompra({
                             variant="ghost"
                             size="icon-xs"
                             onClick={() => handleRemoveLinea(i)}
-                            className="text-muted-foreground hover:text-destructive"
                           >
-                            <Trash2 className="size-3.5" />
+                            <Trash2 className="size-3 text-destructive" />
                           </Button>
                         </td>
                       </tr>
@@ -273,12 +274,20 @@ export function ModalCompra({
                   })
                 )}
               </tbody>
+              {lineas.length > 0 && (
+                <tfoot className="bg-muted/50 border-t border-border font-semibold">
+                  <tr>
+                    <td colSpan={3} className="p-2.5 text-right">
+                      Total Compra:
+                    </td>
+                    <td className="p-2.5 text-right text-primary">
+                      Bs. {totalCompra.toFixed(2)}
+                    </td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
-          </div>
-
-          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border">
-            <span className="font-semibold text-foreground">TOTAL DE COMPRA:</span>
-            <span className="text-lg font-bold text-foreground">Bs. {totalCompra.toFixed(2)}</span>
           </div>
 
           <DialogFooter className="pt-2">
@@ -291,7 +300,7 @@ export function ModalCompra({
               Cancelar
             </Button>
             <Button type="submit" disabled={isLoading || lineas.length === 0}>
-              {isLoading ? "Registrando..." : "Confirmar Recepción de Inventario"}
+              {isLoading ? "Procesando..." : "Ingresar Compra al Inventario"}
             </Button>
           </DialogFooter>
         </form>

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react"
-import { Plus, Trash2, Wrench } from "lucide-react"
+import { useState, useEffect, useMemo } from "react"
+import { Plus, Trash2, Wrench, User, CheckCircle2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -10,18 +10,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { SmartCombobox, type SmartComboboxOption } from "@/components/ui/smart-combobox"
 import { Textarea } from "@/components/ui/textarea"
 import { ApiRequestError } from "@/lib/api/client"
-import { findClienteByCi } from "@/services/cliente.service"
 import { createOrdenTecnica } from "@/services/ordenTecnica.service"
 import type { Cliente } from "@/types/cliente"
 import type { Producto } from "@/types/producto"
@@ -31,6 +23,7 @@ import type { Usuario } from "@/types/usuario"
 interface ModalOrdenTecnicaProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  clientes: Cliente[]
   productos: Producto[]
   servicios: Servicio[]
   tecnicos: Usuario[]
@@ -53,52 +46,95 @@ type ServicioSeleccionado = {
 export function ModalOrdenTecnica({
   open,
   onOpenChange,
+  clientes,
   productos,
   servicios,
   tecnicos,
   onSuccess,
 }: ModalOrdenTecnicaProps) {
-  const [cliente, setCliente] = useState<Cliente | null>(null)
-  const [ciSearch, setCiSearch] = useState("")
-  const [tecnicoId, setTecnicoId] = useState<string>("none")
+  const [selectedClienteId, setSelectedClienteId] = useState<string | null>(null)
+  const [selectedTecnicoId, setSelectedTecnicoId] = useState<string | null>(null)
   const [diagnostico, setDiagnostico] = useState("")
   const [observaciones, setObservaciones] = useState("")
 
   const [componentes, setComponentes] = useState<ComponenteSeleccionado[]>([])
   const [serviciosSeleccionados, setServiciosSeleccionados] = useState<ServicioSeleccionado[]>([])
 
-  const [selectedProdId, setSelectedProdId] = useState("")
-  const [selectedServId, setSelectedServId] = useState("")
+  const [selectedProdId, setSelectedProdId] = useState<string | null>(null)
+  const [selectedServId, setSelectedServId] = useState<string | null>(null)
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (open) {
-      setCliente(null)
-      setCiSearch("")
-      setTecnicoId("none")
+      setSelectedClienteId(null)
+      setSelectedTecnicoId(null)
       setDiagnostico("")
       setObservaciones("")
       setComponentes([])
       setServiciosSeleccionados([])
+      setSelectedProdId(null)
+      setSelectedServId(null)
       setError(null)
     }
   }, [open])
 
-  const handleBuscarCliente = async () => {
-    if (!ciSearch.trim()) return
-    try {
-      const c = await findClienteByCi(ciSearch.trim())
-      setCliente(c)
-      setError(null)
-    } catch {
-      setCliente(null)
-      setError("No se encontró el cliente con ese CI.")
-    }
-  }
+  // Options para SmartCombobox
+  const clienteOptions = useMemo<SmartComboboxOption[]>(() => {
+    return clientes
+      .filter((c) => c.estado === "Activo")
+      .map((c) => {
+        const full = `${c.nombre} ${c.apellido}`.trim()
+        return {
+          value: c.id,
+          label: full,
+          description: `CI/NIT: ${c.ci} • Tel: ${c.telefono || "S/T"}`,
+          keywords: `${full} ${c.ci} ${c.telefono || ""} ${c.email || ""}`,
+        }
+      })
+  }, [clientes])
+
+  const tecnicoOptions = useMemo<SmartComboboxOption[]>(() => {
+    return tecnicos
+      .filter((t) => t.estado === 1)
+      .map((t) => {
+        const full = `${t.nombre} ${t.apellido}`.trim()
+        return {
+          value: t.id,
+          label: full,
+          description: `Rol: ${t.rol} • Email: ${t.email}`,
+          keywords: `${full} ${t.email} ${t.rol}`,
+        }
+      })
+  }, [tecnicos])
+
+  const productoOptions = useMemo<SmartComboboxOption[]>(() => {
+    return productos
+      .filter((p) => p.stockDisponible > 0)
+      .map((p) => ({
+        value: p.id,
+        label: p.nombreComercial,
+        description: `Código: ${p.skuUnico} • Disp: ${p.stockDisponible} un. • Precio: Bs. ${p.precioVenta.toFixed(2)}`,
+        keywords: `${p.nombreComercial} ${p.skuUnico}`,
+      }))
+  }, [productos])
+
+  const servicioOptions = useMemo<SmartComboboxOption[]>(() => {
+    return servicios.map((s) => ({
+      value: s.id,
+      label: s.nombre,
+      description: `Sugerido: Bs. ${s.precioBaseSugerido.toFixed(2)}`,
+      keywords: `${s.nombre} ${s.precioBaseSugerido}`,
+    }))
+  }, [servicios])
+
+  const clienteSeleccionado = useMemo(() => {
+    return clientes.find((c) => c.id === selectedClienteId) ?? null
+  }, [clientes, selectedClienteId])
 
   const handleAddComponente = () => {
+    if (!selectedProdId) return
     const prod = productos.find((p) => p.id === selectedProdId)
     if (!prod) return
 
@@ -116,10 +152,11 @@ export function ModalOrdenTecnica({
         cantidad: 1,
       },
     ])
-    setSelectedProdId("")
+    setSelectedProdId(null)
   }
 
   const handleAddServicio = () => {
+    if (!selectedServId) return
     const s = servicios.find((item) => item.id === selectedServId)
     if (!s) return
 
@@ -131,13 +168,13 @@ export function ModalOrdenTecnica({
         precioAplicado: s.precioBaseSugerido,
       },
     ])
-    setSelectedServId("")
+    setSelectedServId(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!cliente) {
-      setError("Debes buscar y asociar un cliente registrado con CI.")
+    if (!selectedClienteId) {
+      setError("Debes buscar y seleccionar un cliente registrado.")
       return
     }
 
@@ -146,8 +183,8 @@ export function ModalOrdenTecnica({
 
     try {
       await createOrdenTecnica({
-        clienteId: cliente.id,
-        tecnicoId: tecnicoId === "none" ? null : tecnicoId,
+        clienteId: selectedClienteId,
+        tecnicoId: selectedTecnicoId,
         diagnostico: diagnostico.trim(),
         observaciones: observaciones.trim(),
         componentes: componentes.map((c) => ({
@@ -174,7 +211,7 @@ export function ModalOrdenTecnica({
       <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Wrench className="size-5" />
+            <Wrench className="size-5 text-primary" />
             Nueva Orden de Servicio Técnico / Recepción
           </DialogTitle>
           <DialogDescription>
@@ -191,50 +228,38 @@ export function ModalOrdenTecnica({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Cliente */}
           <div className="space-y-1.5">
-            <Label htmlFor="ci">Cliente Titular (Búsqueda por NIT / Cédula) *</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="ci"
-                placeholder="Ingresa NIT / Cédula del cliente..."
-                value={ciSearch}
-                onChange={(e) => setCiSearch(e.target.value)}
-              />
-              <Button type="button" variant="outline" onClick={handleBuscarCliente}>
-                Buscar
-              </Button>
-            </div>
-            {cliente && (
+            <Label>Cliente Titular (Búsqueda Smart) *</Label>
+            <SmartCombobox
+              options={clienteOptions}
+              value={selectedClienteId}
+              onValueChange={setSelectedClienteId}
+              placeholder="Buscar cliente por nombre, CI, NIT o teléfono..."
+              emptyMessage="No se encontraron clientes activos."
+            />
+            {clienteSeleccionado && (
               <div className="p-2.5 rounded-md bg-muted/40 border border-border text-xs flex items-center justify-between">
-                <span className="font-medium text-foreground">
-                  {cliente.nombre} {cliente.apellido} • Tel: {cliente.telefono}
+                <span className="font-medium text-foreground flex items-center gap-1.5">
+                  <User className="size-3.5 text-muted-foreground" />
+                  {clienteSeleccionado.nombre} {clienteSeleccionado.apellido} • CI/NIT: {clienteSeleccionado.ci}
                 </span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Identificado</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                  <CheckCircle2 className="size-3.5" />
+                  Identificado
+                </span>
               </div>
             )}
           </div>
 
           {/* Técnico Asignado */}
           <div className="space-y-1.5">
-            <Label htmlFor="tecnico">Técnico Responsable</Label>
-            <Select value={tecnicoId} onValueChange={(val) => setTecnicoId(val ?? "none")}>
-              <SelectTrigger id="tecnico" className="w-full">
-                <SelectValue placeholder="Selecciona un técnico (opcional)">
-                  {tecnicoId === "none"
-                    ? "-- Sin asignar --"
-                    : tecnicos.find((t) => t.id === tecnicoId)
-                      ? `${tecnicos.find((t) => t.id === tecnicoId)?.nombre} ${tecnicos.find((t) => t.id === tecnicoId)?.apellido}`
-                      : undefined}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">-- Sin asignar --</SelectItem>
-                {tecnicos.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.nombre} {t.apellido}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Técnico Responsable (Opcional)</Label>
+            <SmartCombobox
+              options={tecnicoOptions}
+              value={selectedTecnicoId}
+              onValueChange={setSelectedTecnicoId}
+              placeholder="Escribe para buscar un técnico responsable..."
+              emptyMessage="No se encontraron técnicos disponibles."
+            />
           </div>
 
           {/* Diagnóstico */}
@@ -249,26 +274,33 @@ export function ModalOrdenTecnica({
             />
           </div>
 
+          {/* Observaciones */}
+          <div className="space-y-1.5">
+            <Label htmlFor="obs">Observaciones / Accesorios Entregados</Label>
+            <Textarea
+              id="obs"
+              value={observaciones}
+              onChange={(e) => setObservaciones(e.target.value)}
+              placeholder="Ej: Cargador original, funda, detalles estéticos..."
+              rows={2}
+            />
+          </div>
+
           {/* Componentes a reservar */}
           <div className="space-y-2 pt-1 border-t border-border">
-            <Label className="text-xs font-semibold">Repuestos / Componentes a Reservar (SRS-CAT-006)</Label>
+            <Label className="text-xs font-semibold flex items-center gap-1.5">
+              Repuestos / Componentes a Reservar (SRS-CAT-006)
+            </Label>
             <div className="flex items-center gap-2">
-              <Select value={selectedProdId} onValueChange={(val) => setSelectedProdId(val ?? "")}>
-                <SelectTrigger className="w-full text-xs">
-                  <SelectValue placeholder="Seleccionar repuesto del inventario...">
-                    {productos.find((p) => p.id === selectedProdId)?.nombreComercial}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {productos
-                    .filter((p) => p.stockDisponible > 0)
-                    .map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.nombreComercial} ({p.stockDisponible} disp.)
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
+              <div className="flex-1">
+                <SmartCombobox
+                  options={productoOptions}
+                  value={selectedProdId}
+                  onValueChange={setSelectedProdId}
+                  placeholder="Buscar componente o repuesto por nombre o SKU..."
+                  emptyMessage="No hay productos con existencias disponibles."
+                />
+              </div>
               <Button type="button" size="sm" onClick={handleAddComponente} disabled={!selectedProdId}>
                 <Plus className="size-3.5" />
               </Button>
@@ -281,7 +313,9 @@ export function ModalOrdenTecnica({
                     key={i}
                     className="flex items-center justify-between p-2 rounded-md bg-muted/40 border border-border text-xs"
                   >
-                    <span>{c.nombre} (Código: {c.sku})</span>
+                    <span>
+                      {c.nombre} <span className="text-muted-foreground font-mono">(Código: {c.sku})</span>
+                    </span>
                     <Button
                       type="button"
                       variant="ghost"
@@ -298,22 +332,20 @@ export function ModalOrdenTecnica({
 
           {/* Servicios técnicos asignados */}
           <div className="space-y-2 pt-1 border-t border-border">
-            <Label className="text-xs font-semibold">Mano de Obra / Servicios Técnicos</Label>
+            <Label className="text-xs font-semibold flex items-center gap-1.5">
+        
+              Mano de Obra / Servicios Técnicos
+            </Label>
             <div className="flex items-center gap-2">
-              <Select value={selectedServId} onValueChange={(val) => setSelectedServId(val ?? "")}>
-                <SelectTrigger className="w-full text-xs">
-                  <SelectValue placeholder="Seleccionar servicio de mano de obra...">
-                    {servicios.find((s) => s.id === selectedServId)?.nombre}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {servicios.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.nombre} (Bs. {s.precioBaseSugerido.toFixed(2)})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex-1">
+                <SmartCombobox
+                  options={servicioOptions}
+                  value={selectedServId}
+                  onValueChange={setSelectedServId}
+                  placeholder="Buscar servicio técnico..."
+                  emptyMessage="No se encontraron servicios."
+                />
+              </div>
               <Button type="button" size="sm" onClick={handleAddServicio} disabled={!selectedServId}>
                 <Plus className="size-3.5" />
               </Button>
@@ -327,7 +359,7 @@ export function ModalOrdenTecnica({
                     className="flex items-center justify-between p-2 rounded-md bg-muted/40 border border-border text-xs"
                   >
                     <span>{s.nombre}</span>
-                    <span className="font-semibold">${s.precioAplicado.toFixed(2)}</span>
+                    <span className="font-semibold text-foreground">Bs {s.precioAplicado.toFixed(2)}</span>
                     <Button
                       type="button"
                       variant="ghost"
@@ -353,7 +385,7 @@ export function ModalOrdenTecnica({
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading || !cliente}>
+            <Button type="submit" disabled={isLoading || !selectedClienteId}>
               {isLoading ? "Creando..." : "Crear Orden y Retener Stock"}
             </Button>
           </DialogFooter>

@@ -160,8 +160,8 @@ export const Apertura_cierre = () => {
                   resultadoCierre.estado === "Caja Cuadrada"
                     ? "success"
                     : resultadoCierre.estado === "Faltante"
-                    ? "destructive"
-                    : "warning"
+                      ? "destructive"
+                      : "warning"
                 }
               >
                 {resultadoCierre.estado}
@@ -170,7 +170,7 @@ export const Apertura_cierre = () => {
             <CardDescription>
               La sesión de caja ha sido cerrada de forma inmutable.{" "}
               {resultadoCierre.usuarioCierreNombre &&
-              resultadoCierre.usuarioCierreNombre !== resultadoCierre.usuarioNombre ? (
+                resultadoCierre.usuarioCierreNombre !== resultadoCierre.usuarioNombre ? (
                 <span className="font-semibold text-primary">
                   (Cierre ejecutado por Administrador: {resultadoCierre.usuarioCierreNombre})
                 </span>
@@ -190,13 +190,12 @@ export const Apertura_cierre = () => {
               <div className="rounded-lg border border-border p-3">
                 <span className="text-xs text-muted-foreground">Diferencia Final</span>
                 <p
-                  className={`text-lg font-bold ${
-                    resultadoCierre.diferenciaMonto === 0
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : resultadoCierre.diferenciaMonto < 0
+                  className={`text-lg font-bold ${resultadoCierre.diferenciaMonto === 0
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : resultadoCierre.diferenciaMonto < 0
                       ? "text-destructive"
                       : "text-amber-600 dark:text-amber-400"
-                  }`}
+                    }`}
                 >
                   {resultadoCierre.diferenciaMonto > 0 ? "+" : ""}
                   Bs. {resultadoCierre.diferenciaMonto.toFixed(2)}
@@ -250,7 +249,7 @@ export const Apertura_cierre = () => {
                 </p>
               </div>
 
-              <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground space-y-1">
+              <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground space-y-1 mb-3">
                 <div className="flex items-center gap-1.5 font-medium text-foreground">
                   <Clock className="size-3.5" />
                   <span>Registro Inmutable</span>
@@ -261,7 +260,7 @@ export const Apertura_cierre = () => {
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+              <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto cursor-pointer ">
                 {isSubmitting ? "Abriendo caja..." : "Confirmar Apertura de Caja"}
               </Button>
             </CardFooter>
@@ -367,7 +366,7 @@ export const Apertura_cierre = () => {
                       required
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 mb-3">
                     <HelpCircle className="size-3.5" />
                     El sistema comparará automáticamente este valor contra las ventas y mermas registradas para emitir el diagnóstico.
                   </p>
@@ -378,13 +377,13 @@ export const Apertura_cierre = () => {
                   type="submit"
                   variant="destructive"
                   disabled={!puedeCerrar || isSubmitting}
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto cursor-pointer"
                 >
                   {isSubmitting
                     ? "Procesando Arqueo..."
                     : esAdmin && !esCreadorCaja
-                    ? "Cerrar Caja como Administrador"
-                    : "Ejecutar Cierre de Caja"}
+                      ? "Cerrar Caja como Administrador"
+                      : "Ejecutar Cierre de Caja"}
                 </Button>
               </CardFooter>
             </form>

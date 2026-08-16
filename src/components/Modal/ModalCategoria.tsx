@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -10,13 +10,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { SmartCombobox, type SmartComboboxOption } from "@/components/ui/smart-combobox"
 import { ApiRequestError } from "@/lib/api/client"
 import { createCategoria, updateCategoria } from "@/services/categoria.service"
 import type { Categoria } from "@/types/categoria"
@@ -39,20 +33,33 @@ export function ModalCategoria({
   onSuccess,
 }: ModalCategoriaProps) {
   const [nombre, setNombre] = useState("")
-  const [categoriaPadreId, setCategoriaPadreId] = useState<string>("none")
+  const [categoriaPadreId, setCategoriaPadreId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (categoria && mode === "edit") {
       setNombre(categoria.nombre)
-      setCategoriaPadreId(categoria.categoriaPadreId || "none")
+      setCategoriaPadreId(categoria.categoriaPadreId || null)
     } else {
       setNombre("")
-      setCategoriaPadreId("none")
+      setCategoriaPadreId(null)
     }
     setError(null)
   }, [categoria, mode, open])
+
+  const categoriasFiltradas = useMemo(() => {
+    return categoriasDisponibles.filter((c) => mode === "create" || c.id !== categoria?.id)
+  }, [categoriasDisponibles, mode, categoria])
+
+  const categoriaPadreOptions = useMemo<SmartComboboxOption[]>(() => {
+    return categoriasFiltradas.map((c) => ({
+      value: c.id,
+      label: c.nombre,
+      description: c.categoriaPadreNombre ? `Subcategoría de: ${c.categoriaPadreNombre}` : "Categoría Raíz",
+      keywords: `${c.nombre} ${c.categoriaPadreNombre || ""}`,
+    }))
+  }, [categoriasFiltradas])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -64,18 +71,16 @@ export function ModalCategoria({
     setIsLoading(true)
     setError(null)
 
-    const padreId = categoriaPadreId === "none" ? null : categoriaPadreId
-
     try {
       if (mode === "create") {
         await createCategoria({
           nombre: nombre.trim(),
-          categoriaPadreId: padreId,
+          categoriaPadreId: categoriaPadreId || null,
         })
       } else if (categoria) {
         await updateCategoria(categoria.id, {
           nombre: nombre.trim(),
-          categoriaPadreId: padreId,
+          categoriaPadreId: categoriaPadreId || null,
         })
       }
       onSuccess()
@@ -87,10 +92,6 @@ export function ModalCategoria({
       setIsLoading(false)
     }
   }
-
-  const categoriasFiltradas = categoriasDisponibles.filter(
-    (c) => mode === "create" || c.id !== categoria?.id
-  )
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -126,23 +127,16 @@ export function ModalCategoria({
 
           <div className="space-y-1.5">
             <Label htmlFor="padre">Categoría Padre (Opcional para Jerarquía SRS-CAT-007)</Label>
-            <Select value={categoriaPadreId} onValueChange={(val) => setCategoriaPadreId(val ?? "none")}>
-              <SelectTrigger id="padre" className="w-full">
-                <SelectValue placeholder="Sin categoría padre (Categoría Principal)">
-                  {categoriaPadreId === "none"
-                    ? "-- Ninguna (Categoría Principal) --"
-                    : categoriasFiltradas.find((c) => c.id === categoriaPadreId)?.nombre}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">-- Ninguna (Categoría Principal) --</SelectItem>
-                {categoriasFiltradas.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SmartCombobox
+              options={categoriaPadreOptions}
+              value={categoriaPadreId}
+              onValueChange={setCategoriaPadreId}
+              placeholder="Buscar categoría padre (o dejar vacío para principal)..."
+              emptyMessage="No se encontraron categorías padre disponibles."
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Si no seleccionas ninguna, se registrará como Categoría Principal.
+            </p>
           </div>
 
           <DialogFooter className="pt-2">

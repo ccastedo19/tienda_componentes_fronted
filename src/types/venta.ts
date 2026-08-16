@@ -16,6 +16,7 @@ export type ItemServicioRequest = {
 export type CheckoutRequest = {
   clienteId?: string | null
   cotizacionId?: string | null
+  ordenTecnicaId?: string | null
   metodoPago: "Efectivo" | "QR" | "Pago Mixto"
   montoRecibidoEfectivo?: number
   montoQr?: number
@@ -54,6 +55,8 @@ export type Venta = {
   vendedorNombre: string
   clienteNombre: string
   clienteCi?: string | null
+  ordenTecnicaId?: string | null
+  ordenTecnicaCodigo?: string | null
   fechaHora: string
   total: number
   metodoPago: "Efectivo" | "QR" | "Pago Mixto"
