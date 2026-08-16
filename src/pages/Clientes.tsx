@@ -151,11 +151,14 @@ export const Clientes = () => {
       {
         accessorKey: "ci",
         header: ({ column }) => <DataTableColumnHeader column={column} title="NIT / Cédula" />,
-        cell: ({ row }) => (
-          <Badge variant="outline" className="font-mono text-[11px] font-semibold">
-            {row.original.ci}
-          </Badge>
-        ),
+        cell: ({ row }) =>
+          row.original.ci ? (
+            <Badge variant="outline" className="font-mono text-[11px] font-semibold">
+              {row.original.ci}
+            </Badge>
+          ) : (
+            <span className="text-muted-foreground italic text-xs">Sin NIT/CI</span>
+          ),
       },
       {
         accessorKey: "nombre",

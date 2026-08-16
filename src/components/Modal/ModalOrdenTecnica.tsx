@@ -89,8 +89,8 @@ export function ModalOrdenTecnica({
         return {
           value: c.id,
           label: full,
-          description: `CI/NIT: ${c.ci} • Tel: ${c.telefono || "S/T"}`,
-          keywords: `${full} ${c.ci} ${c.telefono || ""} ${c.email || ""}`,
+          description: `CI/NIT: ${c.ci || "S/N"} • Tel: ${c.telefono || "S/T"}`,
+          keywords: `${full} ${c.ci || ""} ${c.telefono || ""} ${c.email || ""}`,
         }
       })
   }, [clientes])
@@ -240,7 +240,7 @@ export function ModalOrdenTecnica({
               <div className="p-2.5 rounded-md bg-muted/40 border border-border text-xs flex items-center justify-between">
                 <span className="font-medium text-foreground flex items-center gap-1.5">
                   <User className="size-3.5 text-muted-foreground" />
-                  {clienteSeleccionado.nombre} {clienteSeleccionado.apellido} • CI/NIT: {clienteSeleccionado.ci}
+                  {clienteSeleccionado.nombre} {clienteSeleccionado.apellido}{clienteSeleccionado.ci ? ` • CI/NIT: ${clienteSeleccionado.ci}` : ""}
                 </span>
                 <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
                   <CheckCircle2 className="size-3.5" />

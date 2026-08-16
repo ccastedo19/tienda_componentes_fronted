@@ -51,9 +51,7 @@ function validate(values: FormValues): FormErrors {
   const errors: FormErrors = {}
 
   const nitTrimmed = values.ci.trim()
-  if (!nitTrimmed) {
-    errors.ci = "El NIT / Cédula es obligatorio"
-  } else if (!NIT_REGEX.test(nitTrimmed)) {
+  if (nitTrimmed && !NIT_REGEX.test(nitTrimmed)) {
     errors.ci = "El NIT debe contener únicamente números enteros entre 5 y 14 dígitos"
   }
 
@@ -133,23 +131,27 @@ export function ModalCliente({
 
     setIsSubmitting(true)
 
+    const payloadCi = values.ci.trim() || undefined
+    const payloadTelefono = values.telefono.trim() || undefined
+    const payloadEmail = values.email.trim().toLowerCase() || undefined
+
     try {
       if (isEdit && cliente) {
         const updated = await updateCliente(cliente.id, {
-          ci: values.ci.trim(),
+          ci: payloadCi ?? null,
           nombre: values.nombre.trim(),
           apellido: values.apellido.trim(),
-          telefono: values.telefono.trim() || undefined,
-          email: values.email.trim().toLowerCase() || undefined,
+          telefono: payloadTelefono,
+          email: payloadEmail,
         })
         onSuccess?.(updated)
       } else {
         const created = await createCliente({
-          ci: values.ci.trim(),
+          ci: payloadCi,
           nombre: values.nombre.trim(),
           apellido: values.apellido.trim(),
-          telefono: values.telefono.trim() || undefined,
-          email: values.email.trim().toLowerCase() || undefined,
+          telefono: payloadTelefono,
+          email: payloadEmail,
         })
         onSuccess?.(created)
       }
@@ -191,20 +193,19 @@ export function ModalCliente({
 
         <form className="space-y-4" onSubmit={handleSubmit} noValidate>
           <div className="space-y-1.5">
-            <Label htmlFor="cliente-ci">NIT / Cédula (Documento) *</Label>
+            <Label htmlFor="cliente-ci">NIT / Cédula (Documento) (Opcional)</Label>
             <Input
               id="cliente-ci"
               name="ci"
               type="text"
               inputMode="numeric"
               value={values.ci}
-              placeholder="Ej: 8654153012"
+              placeholder="Ej: 8654153012 (Opcional)"
               onChange={(event) => updateField("ci", event.target.value.replace(/[^0-9]/g, ""))}
               maxLength={14}
-              required
             />
             {errors.ci && <p className="text-xs text-destructive">{errors.ci}</p>}
-            <p className="text-[11px] text-muted-foreground">Solo números enteros (entre 5 y 14 dígitos).</p>
+            <p className="text-[11px] text-muted-foreground">Opcional. Si se ingresa, debe ser numérico entre 5 y 14 dígitos.</p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
