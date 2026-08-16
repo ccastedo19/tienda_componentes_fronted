@@ -1,24 +1,21 @@
 import { useEffect, useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
-import { BarChart3, Download, Eye } from "lucide-react"
+import { BarChart3, Eye } from "lucide-react"
 
 import { DataTable } from "@/components/data-table/data-table"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
 import { DataTableSearch } from "@/components/data-table/data-table-search"
+import { ModalPdfViewer } from "@/components/Modal/ModalPdfViewer"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ApiRequestError } from "@/lib/api/client"
 import { formatDateTime } from "@/lib/format-date"
-import { descargarNotaVentaPdf, getVentas } from "@/services/venta.service"
+import {
+  descargarNotaVentaPdf,
+  getNotaVentaPdfObjectUrl,
+  getVentas,
+} from "@/services/venta.service"
 import type { Venta } from "@/types/venta"
 
 export const Reporte_ventas = () => {
@@ -27,9 +24,10 @@ export const Reporte_ventas = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Details dialog
-  const [selectedVenta, setSelectedVenta] = useState<Venta | null>(null)
-  const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const [pdfVenta, setPdfVenta] = useState<Venta | null>(null)
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [isLoadingPdf, setIsLoadingPdf] = useState(false)
 
   const loadVentas = async () => {
     setIsLoading(true)
@@ -51,11 +49,29 @@ export const Reporte_ventas = () => {
     void loadVentas()
   }, [])
 
-  const handleDownloadPdf = async (v: Venta) => {
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) window.URL.revokeObjectURL(pdfUrl)
+    }
+  }, [pdfUrl])
+
+  const openNotaVentaPdf = async (venta: Venta) => {
+    setPdfVenta(venta)
+    setIsPdfModalOpen(true)
+    setIsLoadingPdf(true)
+
     try {
-      await descargarNotaVentaPdf(v.id, v.codigoNotaVenta)
+      const url = await getNotaVentaPdfObjectUrl(venta.id)
+      setPdfUrl((prev) => {
+        if (prev) window.URL.revokeObjectURL(prev)
+        return url
+      })
     } catch {
-      alert("Error al descargar el PDF de la nota de venta.")
+      setError("No se pudo cargar el PDF de la nota de venta.")
+      setIsPdfModalOpen(false)
+      setPdfVenta(null)
+    } finally {
+      setIsLoadingPdf(false)
     }
   }
 
@@ -114,8 +130,8 @@ export const Reporte_ventas = () => {
               row.original.metodoPago === "Efectivo"
                 ? "default"
                 : row.original.metodoPago === "QR"
-                ? "info"
-                : "secondary"
+                  ? "info"
+                  : "secondary"
             }
           >
             {row.original.metodoPago}
@@ -135,31 +151,16 @@ export const Reporte_ventas = () => {
         cell: ({ row }) => {
           const v = row.original
           return (
-            <div className="flex items-center gap-1.5">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => {
-                  setSelectedVenta(v)
-                  setIsDetailOpen(true)
-                }}
-                title="Ver detalle de ítems"
-              >
-                <Eye className="size-3.5" />
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                size="xs"
-                onClick={() => void handleDownloadPdf(v)}
-                className="gap-1 cursor-pointer"
-              >
-                <Download className="size-3" />
-                PDF
-              </Button>
-            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              onClick={() => void openNotaVentaPdf(v)}
+              className="cursor-pointer gap-1"
+            >
+              <Eye className="size-3" />
+              Ver nota
+            </Button>
           )
         },
       },
@@ -170,12 +171,13 @@ export const Reporte_ventas = () => {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl flex items-center gap-2">
+        <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
           <BarChart3 className="size-6" />
           Reporte General de Ventas
         </h1>
         <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-          Histórico detallado de comprobantes internos de cobro, conciliación de pagos y desglose de artículos (SRS-POS-011).
+          Histórico detallado de comprobantes internos de cobro, conciliación de pagos y desglose de
+          artículos.
         </p>
       </div>
 
@@ -185,87 +187,33 @@ export const Reporte_ventas = () => {
           onChange={setSearch}
           placeholder="Buscar por código, cliente o vendedor..."
         />
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => void loadVentas()}
-        >
+        <Button type="button" variant="outline" onClick={() => void loadVentas()}>
           Actualizar
         </Button>
       </div>
 
-      {/* Modal Detalle Venta */}
-      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Detalle de Cobro: {selectedVenta?.codigoNotaVenta}</DialogTitle>
-            <DialogDescription>
-              Operador: {selectedVenta?.vendedorNombre} • Modalidad: {selectedVenta?.metodoPago}
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedVenta && (
-            <div className="space-y-3 text-xs">
-              <div className="rounded-lg border border-border overflow-hidden">
-                <table className="w-full">
-                  <thead className="bg-muted text-muted-foreground border-b border-border">
-                    <tr>
-                      <th className="p-2 text-left">Ítem / Descripción</th>
-                      <th className="p-2 text-center">Cant.</th>
-                      <th className="p-2 text-right">P. Unit</th>
-                      <th className="p-2 text-right">Subtotal</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {selectedVenta.productos?.map((p, i) => (
-                      <tr key={i}>
-                        <td className="p-2">
-                          <p className="font-medium text-foreground">{p.productoNombre}</p>
-                          <p className="text-[10px] text-muted-foreground font-mono">
-                            Código: {p.sku} {p.numeroSerie ? `• S/N: ${p.numeroSerie}` : ""}
-                          </p>
-                        </td>
-                        <td className="p-2 text-center">{p.cantidad}</td>
-                        <td className="p-2 text-right">Bs. {p.precioUnitario.toFixed(2)}</td>
-                        <td className="p-2 text-right font-semibold">Bs. {p.subtotalNeto.toFixed(2)}</td>
-                      </tr>
-                    ))}
-                    {selectedVenta.servicios?.map((s, i) => (
-                      <tr key={i}>
-                        <td className="p-2">
-                          <p className="font-medium text-foreground">[Servicio] {s.servicioNombre}</p>
-                        </td>
-                        <td className="p-2 text-center">1</td>
-                        <td className="p-2 text-right">Bs. {s.precioFinalAplicado.toFixed(2)}</td>
-                        <td className="p-2 text-right font-semibold">Bs. {s.subtotalNeto.toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="p-3 rounded-lg bg-muted/30 border border-border space-y-1">
-                {selectedVenta.metodoPago === "Pago Mixto" && (
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Efectivo: Bs. {selectedVenta.montoEfectivo.toFixed(2)} • QR: Bs. {selectedVenta.montoQr.toFixed(2)}</span>
-                    <span>Cambio: Bs. {selectedVenta.cambioEfectivo.toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between font-bold text-sm text-foreground pt-1">
-                  <span>TOTAL COBRADO:</span>
-                  <span>Bs. {selectedVenta.total.toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter className="pt-2">
-            <Button type="button" variant="outline" onClick={() => setIsDetailOpen(false)}>
-              Cerrar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ModalPdfViewer
+        open={isPdfModalOpen}
+        onOpenChange={(open) => {
+          setIsPdfModalOpen(open)
+          if (!open) {
+            setPdfVenta(null)
+            setPdfUrl((prev) => {
+              if (prev) window.URL.revokeObjectURL(prev)
+              return null
+            })
+          }
+        }}
+        title={`Nota de venta ${pdfVenta?.codigoNotaVenta ?? ""}`}
+        description="Visualiza, descarga o imprime el comprobante de la venta."
+        pdfUrl={pdfUrl}
+        isLoading={isLoadingPdf}
+        iframeTitle="Nota de venta PDF"
+        onDownload={() => {
+          if (!pdfVenta) return
+          void descargarNotaVentaPdf(pdfVenta.id, pdfVenta.codigoNotaVenta)
+        }}
+      />
 
       {error && (
         <div className="flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">

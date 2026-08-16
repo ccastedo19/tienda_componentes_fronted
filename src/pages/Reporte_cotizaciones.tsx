@@ -1,16 +1,21 @@
 import { useEffect, useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
-import { FileText, Download } from "lucide-react"
+import { Eye, FileText } from "lucide-react"
 
 import { DataTable } from "@/components/data-table/data-table"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
 import { DataTableSearch } from "@/components/data-table/data-table-search"
+import { ModalPdfViewer } from "@/components/Modal/ModalPdfViewer"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ApiRequestError } from "@/lib/api/client"
 import { formatDateTime } from "@/lib/format-date"
-import { descargarCotizacionPdf, getCotizaciones } from "@/services/cotizacion.service"
+import {
+  descargarCotizacionPdf,
+  getCotizacionPdfObjectUrl,
+  getCotizaciones,
+} from "@/services/cotizacion.service"
 import type { Cotizacion } from "@/types/cotizacion"
 
 export const Reporte_cotizaciones = () => {
@@ -18,6 +23,11 @@ export const Reporte_cotizaciones = () => {
   const [cotizaciones, setCotizaciones] = useState<Cotizacion[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const [pdfCotizacion, setPdfCotizacion] = useState<Cotizacion | null>(null)
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [isLoadingPdf, setIsLoadingPdf] = useState(false)
 
   const loadCotizaciones = async () => {
     setIsLoading(true)
@@ -41,11 +51,29 @@ export const Reporte_cotizaciones = () => {
     void loadCotizaciones()
   }, [])
 
-  const handleDownloadPdf = async (c: Cotizacion) => {
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) window.URL.revokeObjectURL(pdfUrl)
+    }
+  }, [pdfUrl])
+
+  const openProformaPdf = async (cotizacion: Cotizacion) => {
+    setPdfCotizacion(cotizacion)
+    setIsPdfModalOpen(true)
+    setIsLoadingPdf(true)
+
     try {
-      await descargarCotizacionPdf(c.id, c.codigoProforma)
+      const url = await getCotizacionPdfObjectUrl(cotizacion.id)
+      setPdfUrl((prev) => {
+        if (prev) window.URL.revokeObjectURL(prev)
+        return url
+      })
     } catch {
-      alert("Error al descargar el PDF de la cotización.")
+      setError("No se pudo cargar el PDF de la cotización.")
+      setIsPdfModalOpen(false)
+      setPdfCotizacion(null)
+    } finally {
+      setIsLoadingPdf(false)
     }
   }
 
@@ -62,7 +90,9 @@ export const Reporte_cotizaciones = () => {
       },
       {
         accessorKey: "codigoProforma",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Código Proforma" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Código Proforma" />
+        ),
         cell: ({ row }) => (
           <Badge variant="outline" className="font-mono text-[11px] font-semibold">
             {row.original.codigoProforma}
@@ -71,7 +101,9 @@ export const Reporte_cotizaciones = () => {
       },
       {
         accessorKey: "clienteNombre",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Cliente Titular" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Cliente Titular" />
+        ),
         cell: ({ row }) => (
           <div>
             <p className="font-medium text-foreground">{row.original.clienteNombre}</p>
@@ -81,7 +113,9 @@ export const Reporte_cotizaciones = () => {
       },
       {
         accessorKey: "fechaHora",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha Emisión" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Fecha Emisión" />
+        ),
         cell: ({ row }) => (
           <span className="text-xs text-muted-foreground">
             {formatDateTime(row.original.fechaHora)}
@@ -95,7 +129,9 @@ export const Reporte_cotizaciones = () => {
       },
       {
         accessorKey: "totalEstimado",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Total Estimado" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Total Estimado" />
+        ),
         cell: ({ row }) => (
           <span className="font-bold text-foreground">
             Bs. {row.original.totalEstimado.toFixed(2)}
@@ -108,23 +144,24 @@ export const Reporte_cotizaciones = () => {
         cell: ({ row }) => {
           const st = row.original.estado
           if (st === "Pendiente") return <Badge variant="warning">Pendiente</Badge>
-          if (st === "Convertida en Venta") return <Badge variant="success">Convertida en Venta</Badge>
+          if (st === "Convertida en Venta")
+            return <Badge variant="success">Convertida en Venta</Badge>
           return <Badge variant="destructive">Vencida</Badge>
         },
       },
       {
         id: "acciones",
-        header: "PDF",
+        header: "Acciones",
         cell: ({ row }) => (
           <Button
             type="button"
             variant="outline"
             size="xs"
-            onClick={() => void handleDownloadPdf(row.original)}
-            className="gap-1 cursor-pointer"
+            onClick={() => void openProformaPdf(row.original)}
+            className="cursor-pointer gap-1"
           >
-            <Download className="size-3" />
-            PDF
+            <Eye className="size-3" />
+            Ver proforma
           </Button>
         ),
       },
@@ -135,12 +172,12 @@ export const Reporte_cotizaciones = () => {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl flex items-center gap-2">
+        <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
           <FileText className="size-6" />
           Reporte de Cotizaciones Emitidas
         </h1>
         <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-          Histórico de proformas comerciales con estado de conversión en venta y descarga de documentos oficiales.
+          Histórico de proformas comerciales con estado de conversión en venta.
         </p>
       </div>
 
@@ -150,14 +187,33 @@ export const Reporte_cotizaciones = () => {
           onChange={setSearch}
           placeholder="Buscar por código, cliente o NIT..."
         />
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => void loadCotizaciones()}
-        >
+        <Button type="button" variant="outline" onClick={() => void loadCotizaciones()}>
           Actualizar
         </Button>
       </div>
+
+      <ModalPdfViewer
+        open={isPdfModalOpen}
+        onOpenChange={(open) => {
+          setIsPdfModalOpen(open)
+          if (!open) {
+            setPdfCotizacion(null)
+            setPdfUrl((prev) => {
+              if (prev) window.URL.revokeObjectURL(prev)
+              return null
+            })
+          }
+        }}
+        title={`Proforma ${pdfCotizacion?.codigoProforma ?? ""}`}
+        description="Visualiza, descarga o imprime la cotización."
+        pdfUrl={pdfUrl}
+        isLoading={isLoadingPdf}
+        iframeTitle="Proforma PDF"
+        onDownload={() => {
+          if (!pdfCotizacion) return
+          void descargarCotizacionPdf(pdfCotizacion.id, pdfCotizacion.codigoProforma)
+        }}
+      />
 
       {error && (
         <div className="flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
