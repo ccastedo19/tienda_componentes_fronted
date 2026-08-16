@@ -29,14 +29,7 @@ export async function createCotizacion(payload: CreateCotizacionRequest): Promis
 }
 
 export async function descargarCotizacionPdf(id: string, codigo: string): Promise<void> {
-  const token = getToken()
-  const response = await fetch(`${API_BASE_URL}/cotizaciones/${id}/pdf`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  })
-  if (!response.ok) {
-    throw new Error("No se pudo descargar el PDF de la cotización")
-  }
-  const blob = await response.blob()
+  const blob = await fetchCotizacionPdfBlob(id)
   const url = window.URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = url
@@ -45,4 +38,22 @@ export async function descargarCotizacionPdf(id: string, codigo: string): Promis
   a.click()
   document.body.removeChild(a)
   window.URL.revokeObjectURL(url)
+}
+
+async function fetchCotizacionPdfBlob(id: string): Promise<Blob> {
+  const token = getToken()
+  const response = await fetch(`${API_BASE_URL}/cotizaciones/${id}/pdf`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+
+  if (!response.ok) {
+    throw new Error("No se pudo obtener el PDF de la cotización")
+  }
+
+  return response.blob()
+}
+
+export async function getCotizacionPdfObjectUrl(id: string): Promise<string> {
+  const blob = await fetchCotizacionPdfBlob(id)
+  return window.URL.createObjectURL(blob)
 }

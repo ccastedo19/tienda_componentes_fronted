@@ -1,7 +1,7 @@
 import type { ItemProductoRequest, ItemServicioRequest } from "./venta"
 
 export type CreateCotizacionRequest = {
-  clienteId: string
+  clienteId?: string | null
   diasValidez?: number
   productos: ItemProductoRequest[]
   servicios: ItemServicioRequest[]
