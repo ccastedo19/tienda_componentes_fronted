@@ -25,7 +25,7 @@ Gestionar y mostrar componentes de una tienda con una interfaz moderna, accesibl
 <!-- AUTO:metadata:START -->
 - **Proyecto**: tienda_componentes_full
 - **Versión**: 0.0.0
-- **Última actualización automática**: 2026-08-16T12:56:48.916Z
+- **Última actualización automática**: 2026-08-16T15:44:10.386Z
 - **Última modificación en `src/`**: 2026-08-16T01:25:50.518Z
 <!-- AUTO:metadata:END -->
 
@@ -121,9 +121,11 @@ src/
 - `src/components/Breadcrumbs.tsx`
 - `src/components/GuestRoute.tsx`
 - `src/components/MainLayout.tsx`
+- `src/components/Modal/ModalAsignarTecnico.tsx`
 - `src/components/Modal/ModalCategoria.tsx`
 - `src/components/Modal/ModalCliente.tsx`
 - `src/components/Modal/ModalCompra.tsx`
+- `src/components/Modal/ModalDetalleOrdenTecnica.tsx`
 - `src/components/Modal/ModalMerma.tsx`
 - `src/components/Modal/ModalOrdenTecnica.tsx`
 - `src/components/Modal/ModalProducto.tsx`

@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
-import { Plus, Wrench, CheckCircle2, XCircle } from "lucide-react"
+import { Plus, Wrench, CheckCircle2, XCircle, Eye, ShoppingCart, UserCheck } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 import { DataTable } from "@/components/data-table/data-table"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
 import { DataTableSearch } from "@/components/data-table/data-table-search"
+import { ModalAsignarTecnico } from "@/components/Modal/ModalAsignarTecnico"
+import { ModalDetalleOrdenTecnica } from "@/components/Modal/ModalDetalleOrdenTecnica"
 import { ModalOrdenTecnica } from "@/components/Modal/ModalOrdenTecnica"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -12,17 +15,21 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { ApiRequestError } from "@/lib/api/client"
 import { formatDateTime } from "@/lib/format-date"
 import { getUsers } from "@/services/auth.service"
+import { getClientes } from "@/services/cliente.service"
 import { getOrdenesTecnicas, updateOrdenTecnicaEstado } from "@/services/ordenTecnica.service"
 import { getProductos } from "@/services/producto.service"
 import { getServicios } from "@/services/servicio.service"
+import type { Cliente } from "@/types/cliente"
 import type { OrdenTecnica } from "@/types/ordenTecnica"
 import type { Producto } from "@/types/producto"
 import type { Servicio } from "@/types/servicio"
 import type { Usuario } from "@/types/usuario"
 
 export const Recepciones = () => {
+  const navigate = useNavigate()
   const [search, setSearch] = useState("")
   const [ordenes, setOrdenes] = useState<OrdenTecnica[]>([])
+  const [clientes, setClientes] = useState<Cliente[]>([])
   const [productos, setProductos] = useState<Producto[]>([])
   const [servicios, setServicios] = useState<Servicio[]>([])
   const [tecnicos, setTecnicos] = useState<Usuario[]>([])
@@ -30,20 +37,26 @@ export const Recepciones = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Modal create
+  // Modals
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [ordenParaVer, setOrdenParaVer] = useState<OrdenTecnica | null>(null)
+  const [isDetalleOpen, setIsDetalleOpen] = useState(false)
+  const [ordenParaAsignar, setOrdenParaAsignar] = useState<OrdenTecnica | null>(null)
+  const [isAsignarOpen, setIsAsignarOpen] = useState(false)
 
   const loadData = async () => {
     setIsLoading(true)
     setError(null)
     try {
-      const [ords, prods, servs, users] = await Promise.all([
+      const [ords, clis, prods, servs, users] = await Promise.all([
         getOrdenesTecnicas(),
+        getClientes(),
         getProductos(),
         getServicios(),
         getUsers(),
       ])
       setOrdenes(ords)
+      setClientes(clis)
       setProductos(prods)
       setServicios(servs)
       setTecnicos(users)
@@ -70,13 +83,23 @@ export const Recepciones = () => {
     try {
       const updated = await updateOrdenTecnicaEstado(orden.id, nuevoEstado)
       setOrdenes((prev) =>
-        prev.map((o) => (o.id === orden.id ? { ...o, estado: updated.estado } : o))
+        prev.map((o) => (o.id === orden.id ? { ...o, estado: updated.estado, fechaHoraFinalizacion: updated.fechaHoraFinalizacion } : o))
       )
     } catch (err) {
       const msg =
         err instanceof ApiRequestError ? err.message : "Error al actualizar estado de la orden."
       setError(msg)
     }
+  }
+
+  const handleTecnicoAsignado = (updated: OrdenTecnica) => {
+    setOrdenes((prev) =>
+      prev.map((o) =>
+        o.id === updated.id
+          ? { ...o, tecnicoId: updated.tecnicoId, tecnicoNombre: updated.tecnicoNombre }
+          : o
+      )
+    )
   }
 
   const columns = useMemo<ColumnDef<OrdenTecnica, unknown>[]>(
@@ -94,9 +117,16 @@ export const Recepciones = () => {
         accessorKey: "codigoOrden",
         header: ({ column }) => <DataTableColumnHeader column={column} title="Código Orden" />,
         cell: ({ row }) => (
-          <Badge variant="outline" className="font-mono text-[11px] font-semibold">
+          <button
+            type="button"
+            onClick={() => {
+              setOrdenParaVer(row.original)
+              setIsDetalleOpen(true)
+            }}
+            className="font-mono text-[11px] font-semibold text-primary hover:underline cursor-pointer"
+          >
             {row.original.codigoOrden}
-          </Badge>
+          </button>
         ),
       },
       {
@@ -105,14 +135,23 @@ export const Recepciones = () => {
         cell: ({ row }) => (
           <div>
             <p className="font-medium text-foreground">{row.original.clienteNombre}</p>
-            <p className="text-xs text-muted-foreground">NIT: {row.original.clienteCi}</p>
+            <p className="text-xs text-muted-foreground">CI/NIT: {row.original.clienteCi}</p>
           </div>
         ),
       },
       {
         accessorKey: "tecnicoNombre",
         header: ({ column }) => <DataTableColumnHeader column={column} title="Técnico" />,
-        cell: ({ row }) => <span>{row.original.tecnicoNombre || "Sin asignar"}</span>,
+        cell: ({ row }) => {
+          const tec = row.original.tecnicoNombre
+          return (
+            <div className="flex items-center gap-1.5">
+              <span className={tec ? "text-foreground" : "text-muted-foreground italic text-xs"}>
+                {tec || "Sin asignar"}
+              </span>
+            </div>
+          )
+        },
       },
       {
         accessorKey: "fechaHoraIngreso",
@@ -148,12 +187,55 @@ export const Recepciones = () => {
         header: "Acciones",
         cell: ({ row }) => {
           const ord = row.original
-          if (ord.estado === "Finalizada" || ord.estado === "Cancelada") {
-            return <span className="text-xs text-muted-foreground font-mono">Cerrada</span>
-          }
 
           return (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1">
+              {/* Ver Detalle */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                onClick={() => {
+                  setOrdenParaVer(ord)
+                  setIsDetalleOpen(true)
+                }}
+                title="Ver detalle de la orden"
+              >
+                <Eye className="size-3.5 text-muted-foreground hover:text-foreground" />
+              </Button>
+
+              {/* Asignar / Cambiar Técnico */}
+              {ord.estado !== "Cancelada" && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => {
+                    setOrdenParaAsignar(ord)
+                    setIsAsignarOpen(true)
+                  }}
+                  title={ord.tecnicoId ? "Reasignar técnico" : "Asignar técnico"}
+                  className="text-primary hover:bg-primary/10"
+                >
+                  <UserCheck className="size-3.5" />
+                </Button>
+              )}
+
+              {/* Cobrar en POS */}
+              {ord.estado !== "Cancelada" && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => navigate("/venta", { state: { ordenTecnica: ord } })}
+                  title="Cobrar en POS / Facturar"
+                  className="text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                >
+                  <ShoppingCart className="size-3.5" />
+                </Button>
+              )}
+
+              {/* Estados de flujo */}
               {ord.estado === "Pendiente" && (
                 <Button
                   type="button"
@@ -171,28 +253,31 @@ export const Recepciones = () => {
                   size="xs"
                   onClick={() => void handleCambiarEstado(ord, "Finalizada")}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  title="Finalizar reparación técnica"
                 >
                   <CheckCircle2 className="size-3 mr-1" />
                   Finalizar
                 </Button>
               )}
 
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => void handleCambiarEstado(ord, "Cancelada")}
-                className="text-destructive hover:bg-destructive/10"
-                title="Cancelar Orden"
-              >
-                <XCircle className="size-3.5" />
-              </Button>
+              {ord.estado !== "Finalizada" && ord.estado !== "Cancelada" && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => void handleCambiarEstado(ord, "Cancelada")}
+                  className="text-destructive hover:bg-destructive/10"
+                  title="Cancelar Orden"
+                >
+                  <XCircle className="size-3.5" />
+                </Button>
+              )}
             </div>
           )
         },
       },
     ],
-    []
+    [navigate]
   )
 
   return (
@@ -203,7 +288,7 @@ export const Recepciones = () => {
           Taller y Órdenes de Servicio Técnico (Recepciones)
         </h1>
         <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-          Gestión de reparaciones, repuestos retenidos (stockReservado) y liquidación de servicios técnicos (SRS-CAT-006).
+          Gestión de reparaciones, repuestos retenidos (stockReservado), asignación de personal y liquidación en POS.
         </p>
       </div>
 
@@ -227,10 +312,25 @@ export const Recepciones = () => {
       <ModalOrdenTecnica
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
+        clientes={clientes}
         productos={productos}
         servicios={servicios}
         tecnicos={tecnicos}
         onSuccess={() => void loadData()}
+      />
+
+      <ModalDetalleOrdenTecnica
+        open={isDetalleOpen}
+        onOpenChange={setIsDetalleOpen}
+        orden={ordenParaVer}
+      />
+
+      <ModalAsignarTecnico
+        open={isAsignarOpen}
+        onOpenChange={setIsAsignarOpen}
+        orden={ordenParaAsignar}
+        usuarios={tecnicos}
+        onSuccess={handleTecnicoAsignado}
       />
 
       {error && (

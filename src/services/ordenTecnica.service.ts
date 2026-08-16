@@ -28,3 +28,13 @@ export async function updateOrdenTecnicaEstado(
     method: "PATCH",
   })
 }
+
+export async function updateOrdenTecnicaTecnico(
+  id: string,
+  tecnicoId: string | null
+): Promise<OrdenTecnica> {
+  const query = tecnicoId ? `?tecnicoId=${encodeURIComponent(tecnicoId)}` : ""
+  return apiRequest<OrdenTecnica>(`/ordenes-tecnicas/${id}/tecnico${query}`, {
+    method: "PATCH",
+  })
+}
