@@ -26,6 +26,7 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { useTheme } from "@/hooks/use-theme"
+import { getCachedEmpresaConfig, getEmpresaConfig } from "@/services/empresa.service"
 
 import logo from "../assets/img/logo.jpg"
 
@@ -225,6 +226,29 @@ function TeamSwitcher({
   }[]
 }) {
   const activeTeam = teams[0]
+  const [nombreTienda, setNombreTienda] = React.useState<string>(() => getCachedEmpresaConfig()?.nombreEmpresa || "")
+
+  React.useEffect(() => {
+    getEmpresaConfig().then((cfg) => {
+      if (cfg?.nombreEmpresa) {
+        setNombreTienda(cfg.nombreEmpresa)
+      }
+    }).catch(() => {})
+
+    const handleUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<{ nombreEmpresa?: string }>
+      if (customEvent.detail?.nombreEmpresa) {
+        setNombreTienda(customEvent.detail.nombreEmpresa)
+      } else {
+        setNombreTienda(getCachedEmpresaConfig()?.nombreEmpresa || "")
+      }
+    }
+
+    window.addEventListener("empresa-config-changed", handleUpdate)
+    return () => {
+      window.removeEventListener("empresa-config-changed", handleUpdate)
+    }
+  }, [])
 
   if (!activeTeam) {
     return null
@@ -238,7 +262,7 @@ function TeamSwitcher({
             {activeTeam.logoImage ? (
               <img
                 src={logo}
-                alt={activeTeam.name}
+                alt={nombreTienda || activeTeam.name}
                 className="size-8 rounded-lg object-cover"
               />
             ) : (
@@ -246,7 +270,7 @@ function TeamSwitcher({
             )}
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight">
-            <span className="truncate font-medium">{activeTeam.name}</span>
+            <span className="truncate font-medium">{nombreTienda || activeTeam.name}</span>
             <span className="truncate text-xs text-muted-foreground">
               {activeTeam.plan}
             </span>
