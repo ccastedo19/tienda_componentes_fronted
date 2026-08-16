@@ -19,7 +19,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { formatDateTime } from "@/lib/format-date"
-import { getKardexByProducto } from "@/services/kardex.service"
+import { getKardexByProducto, getKardexGeneral } from "@/services/kardex.service"
 import { getMermas } from "@/services/merma.service"
 import { getProductos } from "@/services/producto.service"
 import type { KardexMovimiento } from "@/types/kardex"
@@ -28,7 +28,7 @@ import type { Producto } from "@/types/producto"
 
 export const Kardex_inventario = () => {
   const [productos, setProductos] = useState<Producto[]>([])
-  const [selectedProdId, setSelectedProdId] = useState<string>("")
+  const [selectedProdId, setSelectedProdId] = useState<string>("ALL")
   const [kardexMovimientos, setKardexMovimientos] = useState<KardexMovimiento[]>([])
   const [mermas, setMermas] = useState<Merma[]>([])
 
@@ -43,21 +43,22 @@ export const Kardex_inventario = () => {
       const [prodsData, mermasData] = await Promise.all([getProductos(), getMermas()])
       setProductos(prodsData)
       setMermas(mermasData)
-      if (prodsData.length > 0) {
-        setSelectedProdId(prodsData[0].id)
-      }
     } catch {
       setError("No se pudieron cargar los datos de inventario.")
     }
   }
 
-  const loadKardexForProduct = async (prodId: string) => {
-    if (!prodId) return
+  const loadKardexData = async (prodId: string) => {
     setIsLoadingKardex(true)
     setError(null)
     try {
-      const data = await getKardexByProducto(prodId)
-      setKardexMovimientos(data)
+      if (prodId === "ALL") {
+        const data = await getKardexGeneral()
+        setKardexMovimientos(data)
+      } else if (prodId) {
+        const data = await getKardexByProducto(prodId)
+        setKardexMovimientos(data)
+      }
     } catch {
       setKardexMovimientos([])
       setError("Error al consultar el historial de movimientos de kardex.")
@@ -72,7 +73,7 @@ export const Kardex_inventario = () => {
 
   useEffect(() => {
     if (selectedProdId) {
-      void loadKardexForProduct(selectedProdId)
+      void loadKardexData(selectedProdId)
     }
   }, [selectedProdId])
 
@@ -92,6 +93,21 @@ export const Kardex_inventario = () => {
         },
         enableSorting: false,
       },
+      ...(selectedProdId === "ALL"
+        ? [
+            {
+              accessorKey: "productoNombre" as const,
+              header: ({ column }: { column: any }) => (
+                <DataTableColumnHeader column={column} title="Producto" />
+              ),
+              cell: ({ row }: { row: any }) => (
+                <span className="font-medium text-foreground">
+                  {row.original.productoNombre || "-"}
+                </span>
+              ),
+            },
+          ]
+        : []),
       {
         accessorKey: "fechaHora",
         header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha / Hora" />,
@@ -146,7 +162,7 @@ export const Kardex_inventario = () => {
         ),
       },
     ],
-    []
+    [selectedProdId]
   )
 
   const mermaColumns = useMemo<ColumnDef<Merma, unknown>[]>(
@@ -242,30 +258,35 @@ export const Kardex_inventario = () => {
         productos={productos}
         onSuccess={() => {
           void loadInitialData()
-          if (selectedProdId) void loadKardexForProduct(selectedProdId)
+          if (selectedProdId) void loadKardexData(selectedProdId)
         }}
       />
 
       <Tabs defaultValue="kardex" className="w-full space-y-4">
         <TabsList>
-          <TabsTrigger value="kardex">Kardex por Producto</TabsTrigger>
+          <TabsTrigger value="kardex">Kardex de Movimientos</TabsTrigger>
           <TabsTrigger value="mermas">Historial de Mermas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="kardex" className="space-y-4">
           <Card className="border-border shadow-xs">
             <CardHeader className="p-4 pb-2">
-              <CardTitle className="text-sm">Seleccionar Artículo a Auditar</CardTitle>
+              <CardTitle className="text-sm">Filtrar por Artículo o Ver Kardex General</CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0">
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                <Select value={selectedProdId} onValueChange={(val) => setSelectedProdId(val ?? "")}>
+                <Select value={selectedProdId} onValueChange={(val) => setSelectedProdId(val ?? "ALL")}>
                   <SelectTrigger className="w-full sm:w-96">
                     <SelectValue placeholder="Selecciona un producto...">
-                      {selectedProduct ? `${selectedProduct.nombreComercial} (Código: ${selectedProduct.skuUnico})` : undefined}
+                      {selectedProdId === "ALL"
+                        ? "Todos los productos (Kardex General)"
+                        : selectedProduct
+                        ? `${selectedProduct.nombreComercial} (Código: ${selectedProduct.skuUnico})`
+                        : undefined}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="ALL">Todos los productos (Kardex General)</SelectItem>
                     {productos.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                         {p.nombreComercial} (Código: {p.skuUnico})
@@ -274,7 +295,17 @@ export const Kardex_inventario = () => {
                   </SelectContent>
                 </Select>
 
-                {selectedProduct && (
+                {selectedProdId === "ALL" ? (
+                  <div className="flex items-center gap-3 text-xs bg-muted/40 p-2 rounded-md border border-border">
+                    <span>
+                      Total Productos: <strong>{productos.length}</strong>
+                    </span>
+                    <span>•</span>
+                    <span>
+                      Total Movimientos: <strong>{kardexMovimientos.length}</strong>
+                    </span>
+                  </div>
+                ) : selectedProduct ? (
                   <div className="flex items-center gap-3 text-xs bg-muted/40 p-2 rounded-md border border-border">
                     <span>
                       Stock Actual: <strong>{selectedProduct.stockActual} un.</strong>
@@ -288,7 +319,7 @@ export const Kardex_inventario = () => {
                       P. Venta: <strong>Bs. {selectedProduct.precioVenta.toFixed(2)}</strong>
                     </span>
                   </div>
-                )}
+                ) : null}
               </div>
             </CardContent>
           </Card>
@@ -303,7 +334,7 @@ export const Kardex_inventario = () => {
             <DataTable
               columns={kardexColumns}
               data={kardexMovimientos}
-              emptyMessage="No se encontraron movimientos registrados en el Kardex para este producto."
+              emptyMessage="No se encontraron movimientos registrados en el Kardex."
             />
           )}
         </TabsContent>

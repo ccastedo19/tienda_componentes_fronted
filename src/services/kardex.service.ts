@@ -6,3 +6,9 @@ export async function getKardexByProducto(productoId: string): Promise<KardexMov
     method: "GET",
   })
 }
+
+export async function getKardexGeneral(): Promise<KardexMovimiento[]> {
+  return apiRequest<KardexMovimiento[]>("/kardex", {
+    method: "GET",
+  })
+}

@@ -1,6 +1,7 @@
 export type KardexMovimiento = {
   id: string
   productoId: string
+  productoNombre?: string
   usuarioNombre?: string
   fechaHora: string
   tipoMovimiento: string

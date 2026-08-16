@@ -25,8 +25,8 @@ Gestionar y mostrar componentes de una tienda con una interfaz moderna, accesibl
 <!-- AUTO:metadata:START -->
 - **Proyecto**: tienda_componentes_full
 - **Versión**: 0.0.0
-- **Última actualización automática**: 2026-07-12T19:08:40.434Z
-- **Última modificación en `src/`**: 2026-07-11T15:43:32.746Z
+- **Última actualización automática**: 2026-08-16T01:54:00.425Z
+- **Última modificación en `src/`**: 2026-08-16T01:25:50.518Z
 <!-- AUTO:metadata:END -->
 
 ---
@@ -38,11 +38,14 @@ Gestionar y mostrar componentes de una tienda con una interfaz moderna, accesibl
 - **@base-ui/react**: ^1.6.0
 - **@fontsource-variable/geist**: ^5.2.9
 - **@tailwindcss/vite**: ^4.3.2
+- **@tanstack/react-table**: ^8.21.3
 - **class-variance-authority**: ^0.7.1
 - **clsx**: ^2.1.1
 - **lucide-react**: ^1.24.0
+- **next-themes**: ^0.4.6
 - **react**: ^19.2.7
 - **react-dom**: ^19.2.7
+- **react-router-dom**: ^7.18.1
 - **tailwind-merge**: ^3.6.0
 - **tailwindcss**: ^4.3.2
 - **tw-animate-css**: ^1.4.0
@@ -51,7 +54,7 @@ Gestionar y mostrar componentes de una tienda con una interfaz moderna, accesibl
 - **@types/react-dom**: ^19.2.3
 - **@vitejs/plugin-react**: ^6.0.3
 - **oxlint**: ^1.71.0
-- **shadcn**: ^4.13.0
+- **shadcn**: ^4.16.0
 - **typescript**: ~6.0.2
 - **vite**: ^8.1.1
 
@@ -115,15 +118,39 @@ src/
 
 <!-- AUTO:structure:START -->
 ### Componentes de aplicación
+- `src/components/Breadcrumbs.tsx`
+- `src/components/GuestRoute.tsx`
+- `src/components/MainLayout.tsx`
+- `src/components/Modal/ModalCategoria.tsx`
+- `src/components/Modal/ModalCliente.tsx`
+- `src/components/Modal/ModalCompra.tsx`
+- `src/components/Modal/ModalMerma.tsx`
+- `src/components/Modal/ModalOrdenTecnica.tsx`
+- `src/components/Modal/ModalProducto.tsx`
+- `src/components/Modal/ModalProveedor.tsx`
+- `src/components/Modal/ModalSeries.tsx`
+- `src/components/Modal/ModalServicio.tsx`
+- `src/components/Modal/ModalUsuario.tsx`
+- `src/components/ProtectedRoute.tsx`
 - `src/components/app-sidebar.tsx`
+- `src/components/data-table/data-table-column-header.tsx`
+- `src/components/data-table/data-table-search.tsx`
+- `src/components/data-table/data-table.tsx`
+- `src/components/theme-provider.tsx`
 
 ### Hooks
+- `src/hooks/use-auth.ts`
 - `src/hooks/use-mobile.ts`
+- `src/hooks/use-theme.ts`
 
 ### Rutas
 - `src/routes/Route.tsx`
 
 ### Utilidades
+- `src/lib/api/client.ts`
+- `src/lib/api/config.ts`
+- `src/lib/auth/storage.ts`
+- `src/lib/format-date.ts`
 - `src/lib/utils.ts`
 <!-- AUTO:structure:END -->
 
@@ -145,15 +172,28 @@ src/
 - `hooks`: `@/hooks`
 
 ### Componentes UI instalados
+- `src/components/ui/alert.tsx`
 - `src/components/ui/avatar.tsx`
+- `src/components/ui/badge.tsx`
+- `src/components/ui/breadcrumb.tsx`
 - `src/components/ui/button.tsx`
+- `src/components/ui/card.tsx`
 - `src/components/ui/collapsible.tsx`
+- `src/components/ui/combobox.tsx`
+- `src/components/ui/dialog.tsx`
 - `src/components/ui/dropdown-menu.tsx`
+- `src/components/ui/input-group.tsx`
 - `src/components/ui/input.tsx`
+- `src/components/ui/label.tsx`
+- `src/components/ui/select.tsx`
 - `src/components/ui/separator.tsx`
 - `src/components/ui/sheet.tsx`
 - `src/components/ui/sidebar.tsx`
 - `src/components/ui/skeleton.tsx`
+- `src/components/ui/smart-combobox.tsx`
+- `src/components/ui/table.tsx`
+- `src/components/ui/tabs.tsx`
+- `src/components/ui/textarea.tsx`
 - `src/components/ui/tooltip.tsx`
 <!-- AUTO:shadcn:END -->
 
@@ -190,11 +230,29 @@ Servidor MCP configurado en `.cursor/mcp.json`:
 
 ## Rutas y navegación
 
-| Archivo | Estado | Descripción |
-|---------|--------|-------------|
-| `src/routes/Route.tsx` | Pendiente | Definición de rutas de la aplicación |
-
-> Actualizar esta tabla manualmente al implementar el enrutamiento.
+| Ruta | Componente / Página | Descripción |
+|------|---------------------|-------------|
+| `/login` | `GuestRoute` | Pantalla de inicio de sesión con JWT |
+| `/inicio` | `Inicio` | Dashboard analítico y métricas |
+| `/usuarios` | `Usuarios` | Gestión de usuarios y operadores (CRUD Admin) |
+| `/clientes` | `Clientes` | Gestión de clientes (CRUD Admin con validación NIT y email) |
+| `/existencias` | `Existencias` | Control de stock físico y reservado |
+| `/venta` | `Venta` | Terminal Punto de Venta (POS), cobro mixto y emisión |
+| `/compra` | `Compra` | Registro de compras de inventario a proveedores |
+| `/cotizacion` | `Cotizacion` | Emisión de proformas comerciales |
+| `/recepciones` | `Recepciones` | Órdenes de trabajo de taller técnico y repuestos |
+| `/devoluciones` | `Devoluciones` | Gestión de devoluciones y garantías |
+| `/apertura-cierre` | `Apertura_cierre` | Apertura y arqueo ciego de caja |
+| `/historial-caja` | `Historial_caja` | Auditoría de sesiones de caja y alertas |
+| `/reporte-ventas` | `Reporte_ventas` | Historial de ventas y descarga de notas de venta |
+| `/reporte-cotizaciones` | `Reporte_cotizaciones` | Historial y conversión de cotizaciones |
+| `/kardex-inventario` | `Kardex_inventario` | Auditoría de Kardex General y por Producto, registro de mermas |
+| `/productos` | `Productos` | Catálogo de productos, precios y series |
+| `/servicios` | `Servicios` | Catálogo de servicios técnicos |
+| `/categorias` | `Categorias` | Categorías de artículos |
+| `/proveedores` | `Proveedores` | Directorio de proveedores |
+| `/datos-empresa` | `Datos_empresa` | Configuración de la empresa |
+| `/backup` | `Backup` | Respaldo y restauración de base de datos |
 
 ---
 
