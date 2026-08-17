@@ -23,7 +23,6 @@ export const Backup = () => {
     <div className="space-y-6 max-w-4xl">
       <div>
         <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl flex items-center gap-2">
-          <Database className="size-6" />
           Auditoría, Seguridad y Respaldo de Datos
         </h1>
         <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
@@ -94,8 +93,8 @@ export const Backup = () => {
             </ul>
           </CardContent>
           <CardFooter className="p-4 pt-0">
-            <Badge variant="success" className="gap-1">
-              <CheckCircle2 className="size-3" />
+            <Badge variant="success" className="gap-1 mt-2">
+              <CheckCircle2 className="size-3 " />
               Sistema de Auditoría Activo
             </Badge>
           </CardFooter>

@@ -173,7 +173,6 @@ export const Reporte_cotizaciones = () => {
     <div className="space-y-4">
       <div>
         <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-          <FileText className="size-6" />
           Reporte de Cotizaciones Emitidas
         </h1>
         <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">

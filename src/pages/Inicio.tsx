@@ -189,7 +189,6 @@ export const Inicio = () => {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <TrendingUp className="size-5 text-emerald-600 dark:text-emerald-400" />
                     <CardTitle className="text-base">Rentabilidad Neta Consolidada (SRS-ANA-003)</CardTitle>
                   </div>
                   <Badge variant="outline">Auditoría Financiera</Badge>
@@ -235,8 +234,7 @@ export const Inicio = () => {
             <Card className="border-border shadow-xs">
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center gap-2">
-                  <Users className="size-4" />
-                  <CardTitle className="text-sm">Productividad por Operador (SRS-ANA-004)</CardTitle>
+                  <CardTitle className="text-sm">Productividad por Vendedor (SRS-ANA-004)</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="p-4 pt-1">
@@ -279,7 +277,6 @@ export const Inicio = () => {
             <Card className="border-border shadow-xs">
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center gap-2">
-                  <Building2 className="size-4" />
                   <CardTitle className="text-sm">Rendimiento de Proveedores (SRS-ANA-005)</CardTitle>
                 </div>
               </CardHeader>
@@ -327,7 +324,6 @@ export const Inicio = () => {
             <Card className="border-border shadow-xs">
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center gap-2">
-                  <PackageX className="size-4 text-destructive" />
                   <CardTitle className="text-sm">Stock Muerto / Inmovilizado &gt;90 Días (SRS-ANA-006)</CardTitle>
                 </div>
               </CardHeader>
@@ -376,7 +372,6 @@ export const Inicio = () => {
             <Card className="border-border shadow-xs">
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center gap-2">
-                  <Wrench className="size-4" />
                   <CardTitle className="text-sm">Retorno de Inversión (ROI) de Taller (SRS-ANA-007)</CardTitle>
                 </div>
               </CardHeader>

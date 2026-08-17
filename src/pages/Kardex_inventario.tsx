@@ -226,7 +226,6 @@ export const Kardex_inventario = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl flex items-center gap-2">
-            <ClipboardList className="size-6" />
             Control de Kardex y Registro de Mermas
           </h1>
           <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
