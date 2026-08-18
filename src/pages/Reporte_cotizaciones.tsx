@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
-import { Eye, FileText } from "lucide-react"
+import { Eye } from "lucide-react"
 
 import { DataTable } from "@/components/data-table/data-table"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"

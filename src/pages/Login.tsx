@@ -1,6 +1,6 @@
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
-import { Eye, EyeOff, Moon, Sun } from "lucide-react"
+import { Eye, EyeOff, Moon, Sun, ShieldAlert, Clock } from "lucide-react"
 
 import logo from "@/assets/img/logo.jpg"
 import { useAuth } from "@/hooks/use-auth"
@@ -24,10 +24,29 @@ type FormErrors = {
   api?: string
 }
 
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (
+        container: string | HTMLElement,
+        options: {
+          sitekey: string
+          callback?: (token: string) => void
+          "error-callback"?: () => void
+          "expired-callback"?: () => void
+          theme?: "light" | "dark" | "auto"
+        }
+      ) => string
+      reset: (widgetId: string) => void
+      remove: (widgetId: string) => void
+    }
+  }
+}
+
 export const Login = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { login } = useAuth()
+  const { login, sessionExpiredReason, clearSessionExpiredReason } = useAuth()
   const { theme, setTheme } = useTheme()
 
   const [email, setEmail] = useState("")
@@ -35,6 +54,69 @@ export const Login = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+
+  const turnstileContainerRef = useRef<HTMLDivElement>(null)
+  const widgetIdRef = useRef<string | null>(null)
+
+  const turnstileSiteKey = import.meta.env.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY as string | undefined
+
+  // Carga e inicialización dinámica de Cloudflare Turnstile si se proporciona site key
+  useEffect(() => {
+    if (!turnstileSiteKey || !turnstileContainerRef.current) {
+      return
+    }
+
+    const scriptId = "cf-turnstile-script"
+    let script = document.getElementById(scriptId) as HTMLScriptElement | null
+
+    const initTurnstile = () => {
+      if (window.turnstile && turnstileContainerRef.current && !widgetIdRef.current) {
+        try {
+          widgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
+            sitekey: turnstileSiteKey,
+            theme: theme === "dark" ? "dark" : "light",
+            callback: (token: string) => {
+              setTurnstileToken(token)
+            },
+            "expired-callback": () => {
+              setTurnstileToken(null)
+            },
+            "error-callback": () => {
+              setTurnstileToken(null)
+            },
+          })
+        } catch {
+          // Ignorar si ya estaba renderizado
+        }
+      }
+    }
+
+    if (!script) {
+      script = document.createElement("script")
+      script.id = scriptId
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+      script.async = true
+      script.defer = true
+      script.onload = () => {
+        initTurnstile()
+      }
+      document.head.appendChild(script)
+    } else {
+      initTurnstile()
+    }
+
+    return () => {
+      if (widgetIdRef.current && window.turnstile) {
+        try {
+          window.turnstile.remove(widgetIdRef.current)
+        } catch {
+          // Ignorar error al desmontar
+        }
+        widgetIdRef.current = null
+      }
+    }
+  }, [turnstileSiteKey, theme])
 
   const validate = (): FormErrors => {
     const nextErrors: FormErrors = {}
@@ -61,9 +143,10 @@ export const Login = () => {
     }
 
     setIsSubmitting(true)
+    clearSessionExpiredReason()
 
     try {
-      await login(email.trim(), password)
+      await login(email.trim(), password, turnstileToken || undefined)
 
       const redirectTo =
         (location.state as { from?: string } | null)?.from ?? "/inicio"
@@ -76,6 +159,12 @@ export const Login = () => {
           : "No se pudo iniciar sesión. Intenta nuevamente."
 
       setErrors({ api: message })
+
+      // Resetear widget de Turnstile tras un fallo de autenticación si está activo
+      if (widgetIdRef.current && window.turnstile) {
+        window.turnstile.reset(widgetIdRef.current)
+        setTurnstileToken(null)
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -102,19 +191,27 @@ export const Login = () => {
       </Button>
 
       <Card className="relative z-10 w-100 max-w-md shadow-lg">
-        <div className="flex items-center justify-center">
+        <div className="flex items-center justify-center pt-4">
           <img src={logo} alt="logo" className="h-15 w-30 object-cover" />
         </div>
-        <CardHeader className="items-center text-center">
+        <CardHeader className="items-center text-center pb-2">
           <CardTitle className="text-xl">Iniciar sesión</CardTitle>
         </CardHeader>
 
         <CardContent>
+          {sessionExpiredReason ? (
+            <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
+              <Clock className="size-4 shrink-0" />
+              <span>{sessionExpiredReason}</span>
+            </div>
+          ) : null}
+
           <form className="space-y-4" onSubmit={handleSubmit} noValidate>
             {errors.api ? (
-              <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {errors.api}
-              </p>
+              <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+                <ShieldAlert className="size-4 shrink-0" />
+                <span>{errors.api}</span>
+              </div>
             ) : null}
 
             <div className="space-y-2">
@@ -137,7 +234,7 @@ export const Login = () => {
                 }}
               />
               {errors.email ? (
-                <p className="text-sm text-destructive">{errors.email}</p>
+                <p className="text-xs text-destructive">{errors.email}</p>
               ) : null}
             </div>
 
@@ -182,9 +279,16 @@ export const Login = () => {
               </div>
 
               {errors.password ? (
-                <p className="text-sm text-destructive">{errors.password}</p>
+                <p className="text-xs text-destructive">{errors.password}</p>
               ) : null}
             </div>
+
+            {/* Contenedor de Cloudflare Turnstile */}
+            {turnstileSiteKey ? (
+              <div className="flex justify-center pt-1">
+                <div ref={turnstileContainerRef} />
+              </div>
+            ) : null}
 
             <Button
               type="submit"
@@ -197,7 +301,7 @@ export const Login = () => {
           </form>
         </CardContent>
 
-        <CardFooter className="justify-center">
+        <CardFooter className="justify-center pt-2">
           <p className="text-xs text-muted-foreground">
             Computer City — Versión 1.0
           </p>

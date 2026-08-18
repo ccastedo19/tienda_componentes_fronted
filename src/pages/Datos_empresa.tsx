@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Building2, Save, CheckCircle2, Phone, Mail, Globe, MapPin, Loader2, AlertCircle } from "lucide-react"
+import { Save, CheckCircle2, Phone, Mail, Globe, MapPin, Loader2, AlertCircle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -106,7 +106,7 @@ export const Datos_empresa = () => {
           <CardHeader className="p-4 pb-2">
             <CardTitle className="text-base">Identificación Fiscal y Comercial</CardTitle>
             <CardDescription>
-              Estos datos se reflejan en las notas de venta interna, cotizaciones impresas y el encabezado del sistema.
+              Estos datos se reflejan en las notas de venta interna y cotizaciones impresas.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4 pt-2 space-y-4">
@@ -124,7 +124,6 @@ export const Datos_empresa = () => {
                       id="nombre"
                       value={nombreEmpresa}
                       onChange={(e) => setNombreEmpresa(e.target.value)}
-                      placeholder="Ej: Lotus Electrónica"
                       required
                     />
                   </div>
@@ -150,7 +149,7 @@ export const Datos_empresa = () => {
                         id="tel"
                         value={telefono}
                         onChange={(e) => setTelefono(e.target.value)}
-                        placeholder="+591 2 2441122"
+                        placeholder="+591 7046789"
                         className="pl-8"
                         required
                       />

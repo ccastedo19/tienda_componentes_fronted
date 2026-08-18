@@ -1,13 +1,8 @@
 import { useState, useEffect } from "react"
 import { Navigate } from "react-router-dom"
 import {
-  TrendingUp,
   AlertTriangle,
   QrCode,
-  Users,
-  Building2,
-  PackageX,
-  Wrench,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"

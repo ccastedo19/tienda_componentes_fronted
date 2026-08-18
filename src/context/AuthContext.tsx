@@ -25,8 +25,10 @@ type AuthContextValue = {
   token: string | null
   isAuthenticated: boolean
   isLoading: boolean
-  login: (email: string, password: string) => Promise<void>
-  logout: () => Promise<void>
+  sessionExpiredReason: string | null
+  login: (email: string, password: string, turnstileToken?: string) => Promise<void>
+  logout: (reason?: string) => Promise<void>
+  clearSessionExpiredReason: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -39,12 +41,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [sessionExpiredReason, setSessionExpiredReason] = useState<string | null>(null)
 
-  const clearLocalSession = useCallback(() => {
+  const clearLocalSession = useCallback((reason?: string) => {
     clearSession()
     setToken(null)
     setUser(null)
+    if (reason) {
+      setSessionExpiredReason(reason)
+    }
   }, [])
+
+  const logout = useCallback(async (reason?: string) => {
+    try {
+      if (getToken()) {
+        await logoutRequest()
+      }
+    } catch {
+      // Si el backend falla, igual cerramos la sesión local.
+    } finally {
+      clearLocalSession(reason)
+    }
+  }, [clearLocalSession])
+
+  // Escuchar eventos globales de sesión no autorizada (401 de backend al expirar las 8 horas)
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      clearLocalSession("Tu sesión ha caducado. Por favor, ingresa tus credenciales nuevamente.")
+    }
+
+    window.addEventListener("auth:session-expired", handleSessionExpired)
+    return () => {
+      window.removeEventListener("auth:session-expired", handleSessionExpired)
+    }
+  }, [clearLocalSession])
 
   useEffect(() => {
     const restoreSession = async () => {
@@ -70,10 +100,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void restoreSession()
   }, [clearLocalSession])
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string, turnstileToken?: string) => {
     clearLocalSession()
+    setSessionExpiredReason(null)
 
-    const response = await loginRequest({ email, password })
+    const response = await loginRequest({ email, password, turnstileToken })
 
     saveToken(response.token)
     setToken(response.token)
@@ -82,17 +113,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(currentUser)
   }, [clearLocalSession])
 
-  const logout = useCallback(async () => {
-    try {
-      if (getToken()) {
-        await logoutRequest()
-      }
-    } catch {
-      // Si el backend falla, igual cerramos la sesión local.
-    } finally {
-      clearLocalSession()
-    }
-  }, [clearLocalSession])
+  const clearSessionExpiredReason = useCallback(() => {
+    setSessionExpiredReason(null)
+  }, [])
 
   const value = useMemo(
     () => ({
@@ -100,10 +123,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token,
       isAuthenticated: Boolean(token && user),
       isLoading,
+      sessionExpiredReason,
       login,
       logout,
+      clearSessionExpiredReason,
     }),
-    [user, token, isLoading, login, logout]
+    [user, token, isLoading, sessionExpiredReason, login, logout, clearSessionExpiredReason]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

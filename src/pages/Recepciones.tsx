@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
-import { Plus, Wrench, CheckCircle2, XCircle, Eye, ShoppingCart, UserCheck } from "lucide-react"
+import { Plus, CheckCircle2, XCircle, Eye, ShoppingCart, UserCheck } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 import { DataTable } from "@/components/data-table/data-table"

@@ -7,6 +7,7 @@ export type ApiError = {
 export type LoginRequest = {
   email: string
   password: string
+  turnstileToken?: string
 }
 
 export type LoginResponse = {

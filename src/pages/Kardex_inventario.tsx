@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
-import { AlertOctagon, ArrowDownRight, ArrowUpRight, ClipboardList } from "lucide-react"
+import { AlertOctagon, ArrowDownRight, ArrowUpRight } from "lucide-react"
 
 import { DataTable } from "@/components/data-table/data-table"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
