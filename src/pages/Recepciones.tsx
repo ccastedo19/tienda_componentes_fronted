@@ -11,6 +11,13 @@ import { ModalDetalleOrdenTecnica } from "@/components/Modal/ModalDetalleOrdenTe
 import { ModalOrdenTecnica } from "@/components/Modal/ModalOrdenTecnica"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ApiRequestError } from "@/lib/api/client"
 import { formatDateTime } from "@/lib/format-date"
@@ -25,9 +32,20 @@ import type { Producto } from "@/types/producto"
 import type { Servicio } from "@/types/servicio"
 import type { Usuario } from "@/types/usuario"
 
+type EstadoOrden = OrdenTecnica["estado"]
+type FiltroEstado = "TODOS" | EstadoOrden
+
+const ESTADOS_ORDEN: EstadoOrden[] = [
+  "Pendiente",
+  "En Proceso",
+  "Finalizada",
+  "Cancelada",
+]
+
 export const Recepciones = () => {
   const navigate = useNavigate()
   const [search, setSearch] = useState("")
+  const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>("TODOS")
   const [ordenes, setOrdenes] = useState<OrdenTecnica[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [productos, setProductos] = useState<Producto[]>([])
@@ -101,6 +119,11 @@ export const Recepciones = () => {
       )
     )
   }
+
+  const ordenesFiltradas = useMemo(() => {
+    if (filtroEstado === "TODOS") return ordenes
+    return ordenes.filter((orden) => orden.estado === filtroEstado)
+  }, [filtroEstado, ordenes])
 
   const columns = useMemo<ColumnDef<OrdenTecnica, unknown>[]>(
     () => [
@@ -292,15 +315,37 @@ export const Recepciones = () => {
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <DataTableSearch
-          value={search}
-          onChange={setSearch}
-          placeholder="Buscar por código, cliente o técnico..."
-        />
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <DataTableSearch
+            value={search}
+            onChange={setSearch}
+            placeholder="Buscar por código, cliente o técnico..."
+            className="w-full sm:max-w-sm"
+          />
+
+          <Select
+            value={filtroEstado}
+            onValueChange={(value) =>
+              setFiltroEstado((value as FiltroEstado | null) ?? "TODOS")
+            }
+          >
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filtrar por estado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="TODOS">Todos los estados</SelectItem>
+              {ESTADOS_ORDEN.map((estado) => (
+                <SelectItem key={estado} value={estado}>
+                  {estado}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         <Button
           type="button"
-          className="w-full sm:w-auto cursor-pointer"
+          className="w-full shrink-0 sm:w-auto cursor-pointer"
           onClick={() => setIsModalOpen(true)}
         >
           <Plus className="size-4" />
@@ -356,7 +401,7 @@ export const Recepciones = () => {
       ) : (
         <DataTable
           columns={columns}
-          data={ordenes}
+          data={ordenesFiltradas}
           searchValue={search}
           searchKeys={["codigoOrden", "clienteNombre", "clienteCi", "tecnicoNombre", "estado"]}
           emptyMessage="No se encontraron órdenes de servicio técnico registradas."
