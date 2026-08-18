@@ -364,7 +364,7 @@ export const Usuarios = () => {
         <DataTableSearch
           value={search}
           onChange={setSearch}
-          placeholder="Buscar personal por nombre o correo..."
+          placeholder="Buscar usuario..."
         />
         <Button
           type="button"

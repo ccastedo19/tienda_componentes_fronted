@@ -35,7 +35,7 @@ export function ModalServicio({
 }: ModalServicioProps) {
   const [nombre, setNombre] = useState("")
   const [descripcion, setDescripcion] = useState("")
-  const [precioBaseSugerido, setPrecioBaseSugerido] = useState("0")
+  const [precioBaseSugerido, setPrecioBaseSugerido] = useState("")
   const [imagenUrl, setImagenUrl] = useState<string | null>(null)
   const [imagenPublicId, setImagenPublicId] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -52,7 +52,7 @@ export function ModalServicio({
     } else {
       setNombre("")
       setDescripcion("")
-      setPrecioBaseSugerido("0")
+      setPrecioBaseSugerido("")
       setImagenUrl(null)
       setImagenPublicId(null)
     }
@@ -146,7 +146,7 @@ export function ModalServicio({
               id="nombre"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
-              placeholder="Ej: Mantenimiento Preventivo, Soldadura SMD, Reballing"
+              placeholder="Ej: Mantenimiento, Soldadura"
               required
             />
           </div>
@@ -157,7 +157,7 @@ export function ModalServicio({
               id="descripcion"
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
-              placeholder="Detalles sobre el alcance del trabajo técnico..."
+              placeholder="Descripción del servicio..."
               rows={2}
             />
           </div>
@@ -175,6 +175,7 @@ export function ModalServicio({
                 min="0"
                 value={precioBaseSugerido}
                 onChange={(e) => setPrecioBaseSugerido(e.target.value)}
+                placeholder="0.00"
                 className="pl-9"
                 required
               />

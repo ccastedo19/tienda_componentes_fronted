@@ -103,7 +103,7 @@ export function ModalSeries({ open, onOpenChange, producto }: ModalSeriesProps) 
               id="serieInput"
               value={nuevoSerial}
               onChange={(e) => setNuevoSerial(e.target.value)}
-              placeholder="Ej: SN-2026-ESP32-00412"
+              placeholder="N° de serie"
               required
             />
           </div>

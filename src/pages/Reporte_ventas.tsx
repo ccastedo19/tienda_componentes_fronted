@@ -185,7 +185,7 @@ export const Reporte_ventas = () => {
         <DataTableSearch
           value={search}
           onChange={setSearch}
-          placeholder="Buscar por código, cliente o vendedor..."
+          placeholder="Buscar venta..."
         />
         <Button type="button" variant="outline" onClick={() => void loadVentas()}>
           Actualizar

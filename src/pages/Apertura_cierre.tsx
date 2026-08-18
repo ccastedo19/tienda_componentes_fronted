@@ -32,7 +32,7 @@ export const Apertura_cierre = () => {
   const [error, setError] = useState<string | null>(null)
 
   // Form states
-  const [montoInicial, setMontoInicial] = useState<string>("0")
+  const [montoInicial, setMontoInicial] = useState<string>("")
   const [recuentoFisico, setRecuentoFisico] = useState<string>("")
   const [resultadoCierre, setResultadoCierre] = useState<Caja | null>(null)
 

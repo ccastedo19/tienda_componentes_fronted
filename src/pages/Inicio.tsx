@@ -229,7 +229,7 @@ export const Inicio = () => {
             <Card className="border-border shadow-xs">
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center gap-2">
-                  <CardTitle className="text-sm">Productividad por Vendedor (SRS-ANA-004)</CardTitle>
+                  <CardTitle className="text-sm">Productividad por Vendedor</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="p-4 pt-1">
@@ -272,7 +272,7 @@ export const Inicio = () => {
             <Card className="border-border shadow-xs">
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center gap-2">
-                  <CardTitle className="text-sm">Rendimiento de Proveedores (SRS-ANA-005)</CardTitle>
+                  <CardTitle className="text-sm">Rendimiento de Proveedores</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="p-4 pt-1">
@@ -319,7 +319,7 @@ export const Inicio = () => {
             <Card className="border-border shadow-xs">
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center gap-2">
-                  <CardTitle className="text-sm">Stock Muerto / Inmovilizado &gt;90 Días (SRS-ANA-006)</CardTitle>
+                  <CardTitle className="text-sm">Stock Muerto / Inmovilizado &gt;90 Días</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="p-4 pt-1">
@@ -367,7 +367,7 @@ export const Inicio = () => {
             <Card className="border-border shadow-xs">
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center gap-2">
-                  <CardTitle className="text-sm">Retorno de Inversión (ROI) de Taller (SRS-ANA-007)</CardTitle>
+                  <CardTitle className="text-sm">Retorno de Inversión (ROI) de Taller</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="p-4 pt-1">

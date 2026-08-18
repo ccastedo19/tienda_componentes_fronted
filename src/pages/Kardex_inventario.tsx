@@ -276,7 +276,7 @@ export const Kardex_inventario = () => {
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <Select value={selectedProdId} onValueChange={(val) => setSelectedProdId(val ?? "ALL")}>
                   <SelectTrigger className="w-full sm:w-96">
-                    <SelectValue placeholder="Selecciona un producto...">
+                    <SelectValue placeholder="Producto...">
                       {selectedProdId === "ALL"
                         ? "Todos los productos (Kardex General)"
                         : selectedProduct

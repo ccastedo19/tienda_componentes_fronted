@@ -120,7 +120,7 @@ export function ModalCategoria({
               id="nombre"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
-              placeholder="Ej: Microcontroladores, Sensores, Resistencias"
+              placeholder="Nombre de categoría"
               required
             />
           </div>
@@ -131,7 +131,7 @@ export function ModalCategoria({
               options={categoriaPadreOptions}
               value={categoriaPadreId}
               onValueChange={setCategoriaPadreId}
-              placeholder="Buscar categoría padre (o dejar vacío para principal)..."
+              placeholder="Categoría padre (opcional)..."
               emptyMessage="No se encontraron categorías padre disponibles."
             />
             <p className="text-[11px] text-muted-foreground">

@@ -176,7 +176,7 @@ export const Categorias = () => {
         <DataTableSearch
           value={search}
           onChange={setSearch}
-          placeholder="Buscar categorías..."
+          placeholder="Buscar categoría..."
         />
 
         <Button

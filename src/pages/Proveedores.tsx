@@ -211,7 +211,7 @@ export const Proveedores = () => {
         <DataTableSearch
           value={search}
           onChange={setSearch}
-          placeholder="Buscar proveedores por nombre o teléfono..."
+          placeholder="Buscar proveedor..."
         />
 
         <Button

@@ -221,7 +221,7 @@ export const Login = () => {
                 name="email"
                 type="email"
                 autoComplete="email"
-                placeholder="Correo electrónico"
+                placeholder="Correo"
                 value={email}
                 aria-invalid={!!errors.email}
                 onChange={(event) => {

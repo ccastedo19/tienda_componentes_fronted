@@ -436,7 +436,7 @@ export const Cotizacion = () => {
             <div className="relative flex-1">
               <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Buscar producto por código, nombre o categoría..."
+                placeholder="Buscar producto..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9"
@@ -447,7 +447,7 @@ export const Cotizacion = () => {
               onValueChange={(val) => setCatalogoTab(val as "productos" | "servicios")}
             >
               <TabsList>
-                <TabsTrigger value="productos">Componentes</TabsTrigger>
+                <TabsTrigger value="productos">Productos</TabsTrigger>
                 <TabsTrigger value="servicios">Servicios</TabsTrigger>
               </TabsList>
             </Tabs>
@@ -542,9 +542,9 @@ export const Cotizacion = () => {
           )}
         </div>
 
-        <div className="space-y-4 lg:col-span-5">
-          <Card className="border-border shadow-xs">
-            <CardHeader className="p-3.5 pb-2">
+        <div className="space-y-3 lg:col-span-5">
+          <Card className="border-border shadow-xs pb-1">
+            <CardHeader className="pr-2 pl-2">
               <div className="flex items-center justify-between gap-2">
                 <CardTitle className="flex items-center gap-1.5 text-sm">
                   <User className="size-4" />
@@ -568,7 +568,7 @@ export const Cotizacion = () => {
                   options={clienteOptions}
                   value={clienteOptionId}
                   onValueChange={handleSelectCliente}
-                  placeholder="Buscar por CI/NIT o nombre completo..."
+                  placeholder="Buscar cliente..."
                   emptyMessage="No se encontraron clientes."
                   className="w-full text-xs"
                   clearOnFocus
@@ -629,7 +629,7 @@ export const Cotizacion = () => {
                     id="dias-validez-custom"
                     type="number"
                     min="1"
-                    placeholder="Días personalizados (ej. 45)"
+                    placeholder="Días"
                     value={customValidez}
                     onChange={(e) => setCustomValidez(e.target.value)}
                     className="mt-1 h-8 text-xs"
@@ -640,7 +640,7 @@ export const Cotizacion = () => {
           </Card>
 
           <Card className="border-border shadow-xs">
-            <CardHeader className="border-b border-border p-3.5 pb-2">
+            <CardHeader className="border-b border-border p-3.5 pt-0">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-sm">
                   <ShoppingCart className="size-4" />
@@ -725,13 +725,16 @@ export const Cotizacion = () => {
                             type="number"
                             min="0"
                             step="0.01"
-                            value={item.precioFinalAplicado}
+                            value={item.precioFinalAplicado || ""}
                             onChange={(e) =>
                               handleUpdatePrecioServicio(
                                 index,
-                                parseFloat(e.target.value) || 0
+                                e.target.value === ""
+                                  ? 0
+                                  : parseFloat(e.target.value) || 0
                               )
                             }
+                            placeholder="0"
                             className="h-6 w-20 px-1.5 text-xs"
                           />
                         </div>
@@ -745,7 +748,12 @@ export const Cotizacion = () => {
                           step="0.01"
                           value={item.valorDescuento || ""}
                           onChange={(e) =>
-                            handleUpdateDescuento(index, parseFloat(e.target.value) || 0)
+                            handleUpdateDescuento(
+                              index,
+                              e.target.value === ""
+                                ? 0
+                                : parseFloat(e.target.value) || 0
+                            )
                           }
                           className="h-6 w-16 px-1 text-xs"
                         />
@@ -769,14 +777,14 @@ export const Cotizacion = () => {
 
               <Button
                 type="button"
-                size="sm"
+                size="lg"
                 onClick={() => void handleEmitirCotizacion()}
                 disabled={
                   cart.length === 0 ||
                   isSubmitting ||
                   diasValidezFinal <= 0
                 }
-                className="w-full text-xs font-semibold"
+                className="w-full cursor-pointer text-sm font-semibold"
               >
                 {isSubmitting ? "Emitiendo..." : "Emitir Cotización"}
               </Button>

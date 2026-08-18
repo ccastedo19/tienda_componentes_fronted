@@ -184,7 +184,7 @@ export const Reporte_cotizaciones = () => {
         <DataTableSearch
           value={search}
           onChange={setSearch}
-          placeholder="Buscar por código, cliente o NIT..."
+          placeholder="Buscar cotización..."
         />
         <Button type="button" variant="outline" onClick={() => void loadCotizaciones()}>
           Actualizar
