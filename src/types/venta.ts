@@ -64,6 +64,9 @@ export type Venta = {
   montoEfectivo: number
   montoQr: number
   cambioEfectivo: number
+  costoTotal?: number
+  gananciaNeta?: number
+  margenPorcentaje?: number
   productos?: DetalleVentaProducto[]
   servicios?: DetalleVentaServicio[]
 }
