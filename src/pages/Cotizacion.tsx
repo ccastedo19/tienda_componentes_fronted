@@ -1,14 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   AlertTriangle,
   CheckCircle2,
   Cpu,
-  Download,
   Eye,
   FileText,
   Minus,
   Plus,
-  Printer,
   Search,
   ShoppingCart,
   Trash2,
@@ -19,18 +17,11 @@ import {
 } from "lucide-react"
 
 import { ModalCliente } from "@/components/Modal/ModalCliente"
+import { ModalTicketProforma } from "@/components/Modal/ModalTicketProforma"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -38,14 +29,11 @@ import { SmartCombobox, type SmartComboboxOption } from "@/components/ui/smart-c
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ApiRequestError } from "@/lib/api/client"
 import { getClientes } from "@/services/cliente.service"
-import {
-  createCotizacion,
-  descargarCotizacionPdf,
-  getCotizacionPdfObjectUrl,
-} from "@/services/cotizacion.service"
+import { createCotizacion } from "@/services/cotizacion.service"
 import { getProductos } from "@/services/producto.service"
 import { getServicios } from "@/services/servicio.service"
 import type { Cliente } from "@/types/cliente"
+import type { Cotizacion as CotizacionModel } from "@/types/cotizacion"
 import type { Producto } from "@/types/producto"
 import type { Servicio } from "@/types/servicio"
 
@@ -88,15 +76,8 @@ export const Cotizacion = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [proformaCreada, setProformaCreada] = useState<{
-    id: string
-    codigo: string
-  } | null>(null)
-
-  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false)
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
-  const [isLoadingPdf, setIsLoadingPdf] = useState(false)
-  const pdfIframeRef = useRef<HTMLIFrameElement>(null)
+  const [proformaCreada, setProformaCreada] = useState<CotizacionModel | null>(null)
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false)
 
   useEffect(() => {
     const loadData = async () => {
@@ -116,12 +97,6 @@ export const Cotizacion = () => {
     }
     void loadData()
   }, [])
-
-  useEffect(() => {
-    return () => {
-      if (pdfUrl) window.URL.revokeObjectURL(pdfUrl)
-    }
-  }, [pdfUrl])
 
   const clienteOptions = useMemo<SmartComboboxOption[]>(() => {
     const options: SmartComboboxOption[] = [
@@ -281,39 +256,8 @@ export const Cotizacion = () => {
     return servicios.filter((s) => s.nombre.toLowerCase().includes(term))
   }, [servicios, searchTerm])
 
-  const openProformaPdfModal = async (id: string) => {
-    setIsPdfModalOpen(true)
-    setIsLoadingPdf(true)
-    setError(null)
-
-    try {
-      const url = await getCotizacionPdfObjectUrl(id)
-      setPdfUrl((prev) => {
-        if (prev) window.URL.revokeObjectURL(prev)
-        return url
-      })
-    } catch {
-      setError("No se pudo cargar el PDF de la cotización.")
-      setIsPdfModalOpen(false)
-    } finally {
-      setIsLoadingPdf(false)
-    }
-  }
-
-  const handlePrintPdf = () => {
-    const iframe = pdfIframeRef.current
-    if (iframe?.contentWindow) {
-      iframe.contentWindow.focus()
-      iframe.contentWindow.print()
-      return
-    }
-
-    if (pdfUrl) {
-      const printWindow = window.open(pdfUrl, "_blank")
-      printWindow?.addEventListener("load", () => {
-        printWindow.print()
-      })
-    }
+  const openProformaTicketModal = () => {
+    setIsTicketModalOpen(true)
   }
 
   const handleEmitirCotizacion = async () => {
@@ -351,15 +295,14 @@ export const Cotizacion = () => {
           })),
       })
 
-      setProformaCreada({ id: nueva.id, codigo: nueva.codigoProforma })
+      setProformaCreada(nueva)
       setCart([])
       setClienteSeleccionado(null)
       setClienteOptionId(CLIENTE_GENERICO_VALUE)
       setDiasValidez(15)
       setIsCustomValidez(false)
       setCustomValidez("")
-
-      await openProformaPdfModal(nueva.id)
+      setIsTicketModalOpen(true)
     } catch (err) {
       const msg =
         err instanceof ApiRequestError ? err.message : "Error al emitir la cotización."
@@ -412,7 +355,7 @@ export const Cotizacion = () => {
             <X className="size-3.5" />
           </Button>
           <AlertTitle className="pr-8 font-semibold text-foreground">
-            ¡Proforma {proformaCreada.codigo} generada exitosamente!
+            ¡Proforma {proformaCreada.codigoProforma} generada exitosamente!
           </AlertTitle>
           <AlertDescription className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <span>La cotización quedó registrada y lista para compartir.</span>
@@ -420,11 +363,11 @@ export const Cotizacion = () => {
               type="button"
               variant="outline"
               size="xs"
-              onClick={() => void openProformaPdfModal(proformaCreada.id)}
+              onClick={openProformaTicketModal}
               className="gap-1 bg-background text-foreground"
             >
               <Eye className="size-3.5" />
-              Ver proforma
+              Ver ticket
             </Button>
           </AlertDescription>
         </Alert>
@@ -436,7 +379,7 @@ export const Cotizacion = () => {
             <div className="relative flex-1">
               <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Buscar producto por código, nombre o categoría..."
+                placeholder="Buscar producto..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9"
@@ -447,7 +390,7 @@ export const Cotizacion = () => {
               onValueChange={(val) => setCatalogoTab(val as "productos" | "servicios")}
             >
               <TabsList>
-                <TabsTrigger value="productos">Componentes</TabsTrigger>
+                <TabsTrigger value="productos">Productos</TabsTrigger>
                 <TabsTrigger value="servicios">Servicios</TabsTrigger>
               </TabsList>
             </Tabs>
@@ -542,9 +485,9 @@ export const Cotizacion = () => {
           )}
         </div>
 
-        <div className="space-y-4 lg:col-span-5">
-          <Card className="border-border shadow-xs">
-            <CardHeader className="p-3.5 pb-2">
+        <div className="space-y-3 lg:col-span-5">
+          <Card className="border-border shadow-xs pb-1">
+            <CardHeader className="pr-2 pl-2">
               <div className="flex items-center justify-between gap-2">
                 <CardTitle className="flex items-center gap-1.5 text-sm">
                   <User className="size-4" />
@@ -568,7 +511,7 @@ export const Cotizacion = () => {
                   options={clienteOptions}
                   value={clienteOptionId}
                   onValueChange={handleSelectCliente}
-                  placeholder="Buscar por CI/NIT o nombre completo..."
+                  placeholder="Buscar cliente..."
                   emptyMessage="No se encontraron clientes."
                   className="w-full text-xs"
                   clearOnFocus
@@ -629,7 +572,7 @@ export const Cotizacion = () => {
                     id="dias-validez-custom"
                     type="number"
                     min="1"
-                    placeholder="Días personalizados (ej. 45)"
+                    placeholder="Días"
                     value={customValidez}
                     onChange={(e) => setCustomValidez(e.target.value)}
                     className="mt-1 h-8 text-xs"
@@ -640,7 +583,7 @@ export const Cotizacion = () => {
           </Card>
 
           <Card className="border-border shadow-xs">
-            <CardHeader className="border-b border-border p-3.5 pb-2">
+            <CardHeader className="border-b border-border p-3.5 pt-0">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-sm">
                   <ShoppingCart className="size-4" />
@@ -725,13 +668,16 @@ export const Cotizacion = () => {
                             type="number"
                             min="0"
                             step="0.01"
-                            value={item.precioFinalAplicado}
+                            value={item.precioFinalAplicado || ""}
                             onChange={(e) =>
                               handleUpdatePrecioServicio(
                                 index,
-                                parseFloat(e.target.value) || 0
+                                e.target.value === ""
+                                  ? 0
+                                  : parseFloat(e.target.value) || 0
                               )
                             }
+                            placeholder="0"
                             className="h-6 w-20 px-1.5 text-xs"
                           />
                         </div>
@@ -745,7 +691,12 @@ export const Cotizacion = () => {
                           step="0.01"
                           value={item.valorDescuento || ""}
                           onChange={(e) =>
-                            handleUpdateDescuento(index, parseFloat(e.target.value) || 0)
+                            handleUpdateDescuento(
+                              index,
+                              e.target.value === ""
+                                ? 0
+                                : parseFloat(e.target.value) || 0
+                            )
                           }
                           className="h-6 w-16 px-1 text-xs"
                         />
@@ -769,14 +720,14 @@ export const Cotizacion = () => {
 
               <Button
                 type="button"
-                size="sm"
+                size="lg"
                 onClick={() => void handleEmitirCotizacion()}
                 disabled={
                   cart.length === 0 ||
                   isSubmitting ||
                   diasValidezFinal <= 0
                 }
-                className="w-full text-xs font-semibold"
+                className="w-full cursor-pointer text-sm font-semibold"
               >
                 {isSubmitting ? "Emitiendo..." : "Emitir Cotización"}
               </Button>
@@ -785,81 +736,11 @@ export const Cotizacion = () => {
         </div>
       </div>
 
-      <Dialog
-        open={isPdfModalOpen}
-        onOpenChange={(open) => {
-          setIsPdfModalOpen(open)
-          if (!open) {
-            setPdfUrl((prev) => {
-              if (prev) window.URL.revokeObjectURL(prev)
-              return null
-            })
-          }
-        }}
-      >
-        <DialogContent
-          className="flex h-[90vh] w-[90vw] max-w-[90vw] flex-col gap-0 overflow-hidden p-0 sm:max-w-[90vw]"
-          showCloseButton
-        >
-          <DialogHeader className="shrink-0 border-b border-border px-4 py-3">
-            <DialogTitle>
-              Proforma {proformaCreada?.codigo ?? ""}
-            </DialogTitle>
-            <DialogDescription>
-              Visualiza, descarga o imprime la cotización.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="min-h-0 flex-1 bg-muted/20 p-3">
-            {isLoadingPdf ? (
-              <div className="flex h-full items-center justify-center">
-                <Skeleton className="h-full w-full" />
-              </div>
-            ) : pdfUrl ? (
-              <iframe
-                ref={pdfIframeRef}
-                src={pdfUrl}
-                title="Proforma PDF"
-                className="h-full w-full rounded-md border border-border bg-background"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                No se pudo cargar el PDF.
-              </div>
-            )}
-          </div>
-
-          <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-t border-border bg-muted/50 p-3 sm:justify-between">
-            <Button type="button" variant="outline" onClick={() => setIsPdfModalOpen(false)}>
-              Cerrar
-            </Button>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={!proformaCreada || isLoadingPdf}
-                onClick={() => {
-                  if (!proformaCreada) return
-                  void descargarCotizacionPdf(proformaCreada.id, proformaCreada.codigo)
-                }}
-                className="gap-1.5"
-              >
-                <Download className="size-4" />
-                Descargar PDF
-              </Button>
-              <Button
-                type="button"
-                disabled={!pdfUrl || isLoadingPdf}
-                onClick={handlePrintPdf}
-                className="gap-1.5"
-              >
-                <Printer className="size-4" />
-                Imprimir
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ModalTicketProforma
+        open={isTicketModalOpen}
+        onOpenChange={setIsTicketModalOpen}
+        cotizacion={proformaCreada}
+      />
 
       <ModalCliente
         open={isClientModalOpen}

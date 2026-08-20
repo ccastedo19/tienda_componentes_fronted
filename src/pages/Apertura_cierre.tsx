@@ -34,7 +34,7 @@ export const Apertura_cierre = () => {
   const [error, setError] = useState<string | null>(null)
 
   // Form states
-  const [montoInicial, setMontoInicial] = useState<string>("0")
+  const [montoInicial, setMontoInicial] = useState<string>("")
   const [recuentoFisico, setRecuentoFisico] = useState<string>("")
   const [recuentoQr, setRecuentoQr] = useState<string>("")
   const [resultadoCierre, setResultadoCierre] = useState<Caja | null>(null)
@@ -538,7 +538,7 @@ export const Apertura_cierre = () => {
                   </div>
                 </div>
 
-                <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground flex items-center gap-2">
+                <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground flex items-center gap-2 mb-3">
                   <HelpCircle className="size-4 shrink-0 text-muted-foreground" />
                   <span>
                     El sistema conciliará por separado los importes en efectivo y las transferencias QR para emitir el diagnóstico de arqueo.

@@ -5,17 +5,13 @@ import { Eye } from "lucide-react"
 import { DataTable } from "@/components/data-table/data-table"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
 import { DataTableSearch } from "@/components/data-table/data-table-search"
-import { ModalPdfViewer } from "@/components/Modal/ModalPdfViewer"
+import { ModalTicketProforma } from "@/components/Modal/ModalTicketProforma"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ApiRequestError } from "@/lib/api/client"
 import { formatDateTime } from "@/lib/format-date"
-import {
-  descargarCotizacionPdf,
-  getCotizacionPdfObjectUrl,
-  getCotizaciones,
-} from "@/services/cotizacion.service"
+import { getCotizaciones } from "@/services/cotizacion.service"
 import type { Cotizacion } from "@/types/cotizacion"
 
 export const Reporte_cotizaciones = () => {
@@ -24,10 +20,8 @@ export const Reporte_cotizaciones = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const [pdfCotizacion, setPdfCotizacion] = useState<Cotizacion | null>(null)
-  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false)
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
-  const [isLoadingPdf, setIsLoadingPdf] = useState(false)
+  const [ticketCotizacion, setTicketCotizacion] = useState<Cotizacion | null>(null)
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false)
 
   const loadCotizaciones = async () => {
     setIsLoading(true)
@@ -51,30 +45,9 @@ export const Reporte_cotizaciones = () => {
     void loadCotizaciones()
   }, [])
 
-  useEffect(() => {
-    return () => {
-      if (pdfUrl) window.URL.revokeObjectURL(pdfUrl)
-    }
-  }, [pdfUrl])
-
-  const openProformaPdf = async (cotizacion: Cotizacion) => {
-    setPdfCotizacion(cotizacion)
-    setIsPdfModalOpen(true)
-    setIsLoadingPdf(true)
-
-    try {
-      const url = await getCotizacionPdfObjectUrl(cotizacion.id)
-      setPdfUrl((prev) => {
-        if (prev) window.URL.revokeObjectURL(prev)
-        return url
-      })
-    } catch {
-      setError("No se pudo cargar el PDF de la cotización.")
-      setIsPdfModalOpen(false)
-      setPdfCotizacion(null)
-    } finally {
-      setIsLoadingPdf(false)
-    }
+  const openProformaTicket = (cotizacion: Cotizacion) => {
+    setTicketCotizacion(cotizacion)
+    setIsTicketModalOpen(true)
   }
 
   const columns = useMemo<ColumnDef<Cotizacion, unknown>[]>(
@@ -157,11 +130,11 @@ export const Reporte_cotizaciones = () => {
             type="button"
             variant="outline"
             size="xs"
-            onClick={() => void openProformaPdf(row.original)}
+            onClick={() => openProformaTicket(row.original)}
             className="cursor-pointer gap-1"
           >
             <Eye className="size-3" />
-            Ver proforma
+            Ver ticket
           </Button>
         ),
       },
@@ -184,34 +157,20 @@ export const Reporte_cotizaciones = () => {
         <DataTableSearch
           value={search}
           onChange={setSearch}
-          placeholder="Buscar por código, cliente o NIT..."
+          placeholder="Buscar cotización..."
         />
         <Button type="button" variant="outline" onClick={() => void loadCotizaciones()}>
           Actualizar
         </Button>
       </div>
 
-      <ModalPdfViewer
-        open={isPdfModalOpen}
+      <ModalTicketProforma
+        open={isTicketModalOpen}
         onOpenChange={(open) => {
-          setIsPdfModalOpen(open)
-          if (!open) {
-            setPdfCotizacion(null)
-            setPdfUrl((prev) => {
-              if (prev) window.URL.revokeObjectURL(prev)
-              return null
-            })
-          }
+          setIsTicketModalOpen(open)
+          if (!open) setTicketCotizacion(null)
         }}
-        title={`Proforma ${pdfCotizacion?.codigoProforma ?? ""}`}
-        description="Visualiza, descarga o imprime la cotización."
-        pdfUrl={pdfUrl}
-        isLoading={isLoadingPdf}
-        iframeTitle="Proforma PDF"
-        onDownload={() => {
-          if (!pdfCotizacion) return
-          void descargarCotizacionPdf(pdfCotizacion.id, pdfCotizacion.codigoProforma)
-        }}
+        cotizacion={ticketCotizacion}
       />
 
       {error && (

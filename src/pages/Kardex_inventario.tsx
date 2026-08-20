@@ -155,6 +155,30 @@ export const Kardex_inventario = () => {
         },
       },
       {
+        accessorKey: "costoUnitario",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Costo Unit. (PMP)" />,
+        cell: ({ row }) => {
+          const cost = row.original.costoUnitario
+          return (
+            <span className="text-xs text-muted-foreground">
+              {cost !== undefined && cost !== null ? `Bs. ${cost.toFixed(2)}` : "-"}
+            </span>
+          )
+        },
+      },
+      {
+        accessorKey: "costoTotal",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Valor Movimiento" />,
+        cell: ({ row }) => {
+          const total = row.original.costoTotal
+          return (
+            <span className="text-xs font-medium text-foreground">
+              {total !== undefined && total !== null ? `Bs. ${total.toFixed(2)}` : "-"}
+            </span>
+          )
+        },
+      },
+      {
         accessorKey: "saldoExistencias",
         header: ({ column }) => <DataTableColumnHeader column={column} title="Saldo Existencias" />,
         cell: ({ row }) => (
@@ -276,7 +300,7 @@ export const Kardex_inventario = () => {
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <Select value={selectedProdId} onValueChange={(val) => setSelectedProdId(val ?? "ALL")}>
                   <SelectTrigger className="w-full sm:w-96">
-                    <SelectValue placeholder="Selecciona un producto...">
+                    <SelectValue placeholder="Producto...">
                       {selectedProdId === "ALL"
                         ? "Todos los productos (Kardex General)"
                         : selectedProduct

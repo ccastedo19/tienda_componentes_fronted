@@ -233,7 +233,7 @@ export function ModalOrdenTecnica({
               options={clienteOptions}
               value={selectedClienteId}
               onValueChange={setSelectedClienteId}
-              placeholder="Buscar cliente por nombre, CI, NIT o teléfono..."
+              placeholder="Buscar cliente..."
               emptyMessage="No se encontraron clientes activos."
             />
             {clienteSeleccionado && (
@@ -257,7 +257,7 @@ export function ModalOrdenTecnica({
               options={tecnicoOptions}
               value={selectedTecnicoId}
               onValueChange={setSelectedTecnicoId}
-              placeholder="Escribe para buscar un técnico responsable..."
+              placeholder="Buscar técnico..."
               emptyMessage="No se encontraron técnicos disponibles."
             />
           </div>
@@ -269,7 +269,7 @@ export function ModalOrdenTecnica({
               id="diag"
               value={diagnostico}
               onChange={(e) => setDiagnostico(e.target.value)}
-              placeholder="Describe la falla reportada por el cliente..."
+              placeholder="Diagnóstico / falla..."
               rows={2}
             />
           </div>
@@ -281,7 +281,7 @@ export function ModalOrdenTecnica({
               id="obs"
               value={observaciones}
               onChange={(e) => setObservaciones(e.target.value)}
-              placeholder="Ej: Cargador original, funda, detalles estéticos..."
+              placeholder="Observaciones..."
               rows={2}
             />
           </div>
@@ -297,7 +297,7 @@ export function ModalOrdenTecnica({
                   options={productoOptions}
                   value={selectedProdId}
                   onValueChange={setSelectedProdId}
-                  placeholder="Buscar componente o repuesto por nombre o SKU..."
+                  placeholder="Buscar componente..."
                   emptyMessage="No hay productos con existencias disponibles."
                 />
               </div>
@@ -342,7 +342,7 @@ export function ModalOrdenTecnica({
                   options={servicioOptions}
                   value={selectedServId}
                   onValueChange={setSelectedServId}
-                  placeholder="Buscar servicio técnico..."
+                  placeholder="Buscar servicio..."
                   emptyMessage="No se encontraron servicios."
                 />
               </div>

@@ -196,7 +196,7 @@ export function ModalMerma({
               }
             >
               <SelectTrigger id="tipoMerma" className="w-full">
-                <SelectValue placeholder="Selecciona tipo de merma" />
+                <SelectValue placeholder="Tipo de merma" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Pérdida Física">
@@ -215,7 +215,7 @@ export function ModalMerma({
               id="obs"
               value={observacion}
               onChange={(e) => setObservacion(e.target.value)}
-              placeholder="Explica detalladamente la causa de la pérdida o avería..."
+              placeholder="Motivo de la merma..."
               rows={2}
               required
             />
@@ -230,7 +230,7 @@ export function ModalMerma({
                     options={productoOptions}
                     value={selectedProdId}
                     onValueChange={setSelectedProdId}
-                    placeholder="Buscar producto averiado por nombre o SKU..."
+                    placeholder="Buscar producto..."
                     emptyMessage="No hay productos con stock actual para declarar merma."
                   />
                 </div>

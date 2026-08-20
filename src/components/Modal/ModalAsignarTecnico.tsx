@@ -108,7 +108,7 @@ export function ModalAsignarTecnico({
               options={tecnicoOptions}
               value={selectedTecnicoId}
               onValueChange={setSelectedTecnicoId}
-              placeholder="Escribe el nombre del técnico..."
+              placeholder="Buscar técnico..."
               emptyMessage="No se encontraron usuarios técnicos activos."
             />
             <p className="text-xs text-muted-foreground">

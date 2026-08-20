@@ -33,6 +33,7 @@ export type DetalleVentaProducto = {
   sku: string
   cantidad: number
   precioUnitario: number
+  costoUnitarioHistorico?: number
   tipoDescuento?: string | null
   valorDescuento?: number
   subtotalNeto: number
@@ -63,6 +64,9 @@ export type Venta = {
   montoEfectivo: number
   montoQr: number
   cambioEfectivo: number
+  costoTotal?: number
+  gananciaNeta?: number
+  margenPorcentaje?: number
   productos?: DetalleVentaProducto[]
   servicios?: DetalleVentaServicio[]
 }

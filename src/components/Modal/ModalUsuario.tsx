@@ -168,7 +168,7 @@ export function ModalUsuario({
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="juan.perez@empresa.com"
+              placeholder="Correo"
               required
             />
           </div>
@@ -177,7 +177,7 @@ export function ModalUsuario({
             <Label htmlFor="rol">Rol Asignado *</Label>
             <Select value={rol} onValueChange={(val) => setRol((val ?? "Vendedor") as "Administrador" | "Vendedor")}>
               <SelectTrigger id="rol" className="w-full">
-                <SelectValue placeholder="Selecciona un rol">
+                <SelectValue placeholder="Rol">
                   {rol === "Administrador" ? "Administrador (Control Total)" : "Vendedor (POS y Consultas)"}
                 </SelectValue>
               </SelectTrigger>

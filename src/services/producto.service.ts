@@ -46,10 +46,13 @@ export async function getSeriesByProducto(productoId: string): Promise<ProductoS
 
 export async function addSerieToProducto(
   productoId: string,
-  payload: { numeroSerieAlfanumerico: string }
+  payload: { numeroSerieAlfanumerico: string; productoId?: string }
 ): Promise<ProductoSerie> {
   return apiRequest<ProductoSerie>(`/productos/${productoId}/series`, {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      ...payload,
+      productoId,
+    }),
   })
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react"
+import { useState, useEffect, useMemo } from "react"
 import {
   ShoppingCart,
   Search,
@@ -11,8 +11,6 @@ import {
   AlertTriangle,
   Lock,
   CheckCircle2,
-  Download,
-  Printer,
   Eye,
   Cpu,
   Wrench,
@@ -23,6 +21,7 @@ import {
 import { Link, useLocation } from "react-router-dom"
 
 import { ModalCliente } from "@/components/Modal/ModalCliente"
+import { ModalTicketVenta } from "@/components/Modal/ModalTicketVenta"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -48,11 +47,7 @@ import { getCotizaciones } from "@/services/cotizacion.service"
 import { getOrdenesTecnicas } from "@/services/ordenTecnica.service"
 import { getProductos, getSeriesByProducto } from "@/services/producto.service"
 import { getServicios } from "@/services/servicio.service"
-import {
-  descargarNotaVentaPdf,
-  getNotaVentaPdfObjectUrl,
-  procesarCheckout,
-} from "@/services/venta.service"
+import { procesarCheckout } from "@/services/venta.service"
 import type { Caja } from "@/types/caja"
 import type { Cliente } from "@/types/cliente"
 import type { Cotizacion } from "@/types/cotizacion"
@@ -124,11 +119,7 @@ export const Venta = () => {
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [ventaCompletada, setVentaCompletada] = useState<VentaModel | null>(null)
-
-  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false)
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
-  const [isLoadingPdf, setIsLoadingPdf] = useState(false)
-  const pdfIframeRef = useRef<HTMLIFrameElement>(null)
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false)
 
   const refreshProductos = async () => {
     try {
@@ -161,14 +152,6 @@ export const Venta = () => {
     }
     void initData()
   }, [])
-
-  useEffect(() => {
-    return () => {
-      if (pdfUrl) {
-        window.URL.revokeObjectURL(pdfUrl)
-      }
-    }
-  }, [pdfUrl])
 
   const clienteOptions = useMemo<SmartComboboxOption[]>(() => {
     const options: SmartComboboxOption[] = [
@@ -546,39 +529,8 @@ export const Venta = () => {
     }
   }, [cart])
 
-  const openVentaPdfModal = async (venta: VentaModel) => {
-    setIsPdfModalOpen(true)
-    setIsLoadingPdf(true)
-    setError(null)
-
-    try {
-      const url = await getNotaVentaPdfObjectUrl(venta.id)
-      setPdfUrl((prev) => {
-        if (prev) window.URL.revokeObjectURL(prev)
-        return url
-      })
-    } catch {
-      setError("No se pudo cargar el PDF de la venta.")
-      setIsPdfModalOpen(false)
-    } finally {
-      setIsLoadingPdf(false)
-    }
-  }
-
-  const handlePrintPdf = () => {
-    const iframe = pdfIframeRef.current
-    if (iframe?.contentWindow) {
-      iframe.contentWindow.focus()
-      iframe.contentWindow.print()
-      return
-    }
-
-    if (pdfUrl) {
-      const printWindow = window.open(pdfUrl, "_blank")
-      printWindow?.addEventListener("load", () => {
-        printWindow.print()
-      })
-    }
+  const openVentaTicketModal = () => {
+    setIsTicketModalOpen(true)
   }
 
   const handleConfirmCheckout = async (e: React.FormEvent) => {
@@ -666,7 +618,7 @@ export const Venta = () => {
       setJustificacionBypass("")
 
       await refreshProductos()
-      await openVentaPdfModal(venta)
+      setIsTicketModalOpen(true)
     } catch (err) {
       const msg = err instanceof ApiRequestError ? err.message : "Error al procesar el cobro."
       setError(msg)
@@ -795,11 +747,11 @@ export const Venta = () => {
               type="button"
               variant="outline"
               size="xs"
-              onClick={() => void openVentaPdfModal(ventaCompletada)}
+              onClick={openVentaTicketModal}
               className="gap-1 bg-background text-foreground"
             >
               <Eye className="size-3.5" />
-              Ver venta
+              Ver ticket
             </Button>
           </AlertDescription>
         </Alert>
@@ -811,7 +763,7 @@ export const Venta = () => {
             <div className="relative flex-1">
               <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Buscar producto por código, nombre o categoría..."
+                placeholder="Buscar producto..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9"
@@ -822,7 +774,7 @@ export const Venta = () => {
               onValueChange={(val) => setCatalogoTab(val as "productos" | "servicios")}
             >
               <TabsList>
-                <TabsTrigger value="productos">Componentes</TabsTrigger>
+                <TabsTrigger value="productos">Productos</TabsTrigger>
                 <TabsTrigger value="servicios">Servicios</TabsTrigger>
               </TabsList>
             </Tabs>
@@ -926,9 +878,9 @@ export const Venta = () => {
           )}
         </div>
 
-        <div className="space-y-4 lg:col-span-5">
-          <Card className="border-border shadow-xs">
-            <CardHeader className="p-3.5 pb-2">
+        <div className="space-y-3 lg:col-span-5">
+          <Card className="border-border shadow-xs pb-1">
+            <CardHeader className="pr-2 pl-2">
               <div className="flex items-center justify-between gap-2">
                 <CardTitle className="flex items-center gap-1.5 text-sm">
                   <User className="size-4" />
@@ -951,7 +903,7 @@ export const Venta = () => {
                 options={clienteOptions}
                 value={clienteOptionId}
                 onValueChange={handleSelectCliente}
-                placeholder="Buscar por CI/NIT o nombre completo..."
+                placeholder="Buscar cliente..."
                 emptyMessage="No se encontraron clientes."
                 className="w-full text-xs"
                 clearOnFocus
@@ -981,7 +933,7 @@ export const Venta = () => {
           </Card>
 
           <Card className="border-border shadow-xs">
-            <CardHeader className="border-b border-border p-3.5 pb-2">
+            <CardHeader className="border-b border-border p-3.5 pt-0">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-sm">
                   <ShoppingCart className="size-4" />
@@ -1105,13 +1057,16 @@ export const Venta = () => {
                               type="number"
                               min="0"
                               step="0.01"
-                              value={item.precioFinalAplicado}
+                              value={item.precioFinalAplicado || ""}
                               onChange={(e) =>
                                 handleUpdatePrecioServicio(
                                   index,
-                                  parseFloat(e.target.value) || 0
+                                  e.target.value === ""
+                                    ? 0
+                                    : parseFloat(e.target.value) || 0
                                 )
                               }
+                              placeholder="0"
                               className="h-6 w-20 px-1.5 text-xs"
                             />
                           </div>
@@ -1127,7 +1082,9 @@ export const Venta = () => {
                             onChange={(e) =>
                               handleUpdateDescuento(
                                 index,
-                                parseFloat(e.target.value) || 0
+                                e.target.value === ""
+                                  ? 0
+                                  : parseFloat(e.target.value) || 0
                               )
                             }
                             className="h-6 w-16 px-1 text-xs"
@@ -1149,7 +1106,7 @@ export const Venta = () => {
                             options={serieOptions}
                             value={item.selectedSerieId}
                             onValueChange={(value) => handleSelectSerie(index, value)}
-                            placeholder="Buscar / seleccionar serie..."
+                            placeholder="Buscar serie..."
                             emptyMessage="No se encontraron series."
                             className="w-full text-xs"
                           />
@@ -1258,10 +1215,10 @@ export const Venta = () => {
 
             {metodoPago === "Pago Mixto" && (
               <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3 text-xs">
-                <p className="font-semibold text-foreground">Fraccionamiento Simultáneo</p>
+                
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <Label htmlFor="fracEfectivo">Fracción Efectivo (Bs.)</Label>
+                    <Label htmlFor="fracEfectivo">Pago en Efectivo (Bs.)</Label>
                     <Input
                       id="fracEfectivo"
                       type="number"
@@ -1273,7 +1230,7 @@ export const Venta = () => {
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="fracQr">Fracción QR (Bs.)</Label>
+                    <Label htmlFor="fracQr">Pago en QR (Bs.)</Label>
                     <Input
                       id="fracQr"
                       type="number"
@@ -1307,20 +1264,20 @@ export const Venta = () => {
                 <div className="space-y-2">
                   <Input
                     type="email"
-                    placeholder="Correo de Administrador"
+                    placeholder="Correo admin"
                     value={adminEmail}
                     onChange={(e) => setAdminEmail(e.target.value)}
                     required
                   />
                   <Input
                     type="password"
-                    placeholder="Contraseña de Administrador"
+                    placeholder="Contraseña"
                     value={adminPassword}
                     onChange={(e) => setAdminPassword(e.target.value)}
                     required
                   />
                   <Textarea
-                    placeholder="Justificación técnica obligatoria de la excepción de precio..."
+                    placeholder="Justificación del bypass..."
                     value={justificacionBypass}
                     onChange={(e) => setJustificacionBypass(e.target.value)}
                     rows={2}
@@ -1333,13 +1290,14 @@ export const Venta = () => {
             <DialogFooter className="pt-2">
               <Button
                 type="button"
+                className="cursor-pointer"
                 variant="outline"
                 onClick={() => setIsCheckoutModalOpen(false)}
                 disabled={isProcessing}
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isProcessing}>
+              <Button type="submit" className="cursor-pointer" disabled={isProcessing}>
                 {isProcessing ? "Confirmando Venta..." : "Confirmar Venta"}
               </Button>
             </DialogFooter>
@@ -1364,7 +1322,7 @@ export const Venta = () => {
                 options={proformaOptions}
                 value={proformaOptionId}
                 onValueChange={setProformaOptionId}
-                placeholder="Buscar proforma por CI, nombre o código..."
+                placeholder="Buscar proforma..."
                 emptyMessage="No se encontraron proformas pendientes."
                 className="w-full"
               />
@@ -1426,7 +1384,7 @@ export const Venta = () => {
                 options={ordenOptions}
                 value={ordenOptionId}
                 onValueChange={setOrdenOptionId}
-                placeholder="Buscar por código de orden, cliente o NIT..."
+                placeholder="Buscar orden..."
                 emptyMessage="No se encontraron órdenes técnicas pendientes o activas."
                 className="w-full"
               />
@@ -1475,84 +1433,11 @@ export const Venta = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={isPdfModalOpen}
-        onOpenChange={(open) => {
-          setIsPdfModalOpen(open)
-          if (!open) {
-            setPdfUrl((prev) => {
-              if (prev) window.URL.revokeObjectURL(prev)
-              return null
-            })
-          }
-        }}
-      >
-        <DialogContent
-          className="flex h-[90vh] w-[90vw] max-w-[90vw] flex-col gap-0 overflow-hidden p-0 sm:max-w-[90vw]"
-          showCloseButton
-        >
-          <DialogHeader className="shrink-0 border-b border-border px-4 py-3">
-            <DialogTitle>
-              Nota de venta {ventaCompletada?.codigoNotaVenta ?? ""}
-            </DialogTitle>
-            <DialogDescription>
-              Visualiza, descarga o imprime el comprobante de la venta.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="min-h-0 flex-1 bg-muted/20 p-3">
-            {isLoadingPdf ? (
-              <div className="flex h-full items-center justify-center">
-                <Skeleton className="h-full w-full" />
-              </div>
-            ) : pdfUrl ? (
-              <iframe
-                ref={pdfIframeRef}
-                src={pdfUrl}
-                title="Nota de venta PDF"
-                className="h-full w-full rounded-md border border-border bg-background"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                No se pudo cargar el PDF.
-              </div>
-            )}
-          </div>
-
-          <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-t border-border bg-muted/50 p-3 sm:justify-between">
-            <Button type="button" variant="outline" onClick={() => setIsPdfModalOpen(false)}>
-              Cerrar
-            </Button>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={!ventaCompletada || isLoadingPdf}
-                onClick={() => {
-                  if (!ventaCompletada) return
-                  void descargarNotaVentaPdf(
-                    ventaCompletada.id,
-                    ventaCompletada.codigoNotaVenta
-                  )
-                }}
-                className="gap-1.5"
-              >
-                <Download className="size-4" />
-                Descargar PDF
-              </Button>
-              <Button
-                type="button"
-                disabled={!pdfUrl || isLoadingPdf}
-                onClick={handlePrintPdf}
-                className="gap-1.5"
-              >
-                <Printer className="size-4" />
-                Imprimir
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ModalTicketVenta
+        open={isTicketModalOpen}
+        onOpenChange={setIsTicketModalOpen}
+        venta={ventaCompletada}
+      />
 
       <ModalCliente
         open={isClientModalOpen}

@@ -125,7 +125,7 @@ export function ModalProveedor({
               id="nombre"
               value={nombreProveedor}
               onChange={(e) => setNombreProveedor(e.target.value)}
-              placeholder="Ej: Arrow Electronics, DigiKey, Distribuidora Central"
+              placeholder="Nombre del proveedor"
               required
             />
           </div>
@@ -137,7 +137,7 @@ export function ModalProveedor({
                 id="telefono"
                 value={telefono}
                 onChange={(e) => setTelefono(e.target.value)}
-                placeholder="+591 70000000"
+                placeholder="Teléfono"
                 required
               />
             </div>
@@ -162,7 +162,7 @@ export function ModalProveedor({
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="contacto@proveedor.com"
+              placeholder="Correo"
             />
           </div>
 
@@ -172,7 +172,7 @@ export function ModalProveedor({
               id="direccion"
               value={direccion}
               onChange={(e) => setDireccion(e.target.value)}
-              placeholder="Av. Principal #123"
+              placeholder="Dirección"
             />
           </div>
 
