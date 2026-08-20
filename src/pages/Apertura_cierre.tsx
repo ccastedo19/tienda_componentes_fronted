@@ -538,7 +538,7 @@ export const Apertura_cierre = () => {
                   </div>
                 </div>
 
-                <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground flex items-center gap-2">
+                <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground flex items-center gap-2 mb-3">
                   <HelpCircle className="size-4 shrink-0 text-muted-foreground" />
                   <span>
                     El sistema conciliará por separado los importes en efectivo y las transferencias QR para emitir el diagnóstico de arqueo.
