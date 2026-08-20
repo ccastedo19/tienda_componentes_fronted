@@ -21,6 +21,10 @@ interface ModalCategoriaProps {
   mode: "create" | "edit"
   categoria?: Categoria | null
   categoriasDisponibles: Categoria[]
+  /** Padre preseleccionado al crear (null = raíz). */
+  defaultCategoriaPadreId?: string | null
+  /** Si true, no permite cambiar la categoría padre. */
+  lockParent?: boolean
   onSuccess: () => void
 }
 
@@ -30,6 +34,8 @@ export function ModalCategoria({
   mode,
   categoria,
   categoriasDisponibles,
+  defaultCategoriaPadreId = null,
+  lockParent = false,
   onSuccess,
 }: ModalCategoriaProps) {
   const [nombre, setNombre] = useState("")
@@ -38,15 +44,17 @@ export function ModalCategoria({
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!open) return
+
     if (categoria && mode === "edit") {
       setNombre(categoria.nombre)
       setCategoriaPadreId(categoria.categoriaPadreId || null)
     } else {
       setNombre("")
-      setCategoriaPadreId(null)
+      setCategoriaPadreId(defaultCategoriaPadreId ?? null)
     }
     setError(null)
-  }, [categoria, mode, open])
+  }, [categoria, mode, open, defaultCategoriaPadreId])
 
   const categoriasFiltradas = useMemo(() => {
     return categoriasDisponibles.filter((c) => mode === "create" || c.id !== categoria?.id)
@@ -56,10 +64,20 @@ export function ModalCategoria({
     return categoriasFiltradas.map((c) => ({
       value: c.id,
       label: c.nombre,
-      description: c.categoriaPadreNombre ? `Subcategoría de: ${c.categoriaPadreNombre}` : "Categoría Raíz",
+      description: c.categoriaPadreNombre
+        ? `Subcategoría de: ${c.categoriaPadreNombre}`
+        : "Categoría Raíz",
       keywords: `${c.nombre} ${c.categoriaPadreNombre || ""}`,
     }))
   }, [categoriasFiltradas])
+
+  const padreNombre = useMemo(() => {
+    if (!categoriaPadreId) return null
+    return categoriasDisponibles.find((c) => c.id === categoriaPadreId)?.nombre ?? null
+  }, [categoriaPadreId, categoriasDisponibles])
+
+  const isSubcategoriaCreate = mode === "create" && Boolean(categoriaPadreId)
+  const isRaizCreate = mode === "create" && !categoriaPadreId
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -86,7 +104,8 @@ export function ModalCategoria({
       onSuccess()
       onOpenChange(false)
     } catch (err) {
-      const msg = err instanceof ApiRequestError ? err.message : "Error al guardar la categoría."
+      const msg =
+        err instanceof ApiRequestError ? err.message : "Error al guardar la categoría."
       setError(msg)
     } finally {
       setIsLoading(false)
@@ -98,12 +117,18 @@ export function ModalCategoria({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {mode === "create" ? "Nueva Categoría" : "Editar Categoría"}
+            {mode === "edit"
+              ? "Editar Categoría"
+              : isSubcategoriaCreate
+                ? "Nueva Subcategoría"
+                : "Nueva Categoría Raíz"}
           </DialogTitle>
           <DialogDescription>
-            {mode === "create"
-              ? "Registra una categoría para clasificar productos (soporta jerarquías)."
-              : "Modifica la información o categoría padre del catálogo."}
+            {mode === "edit"
+              ? "Modifica la información o categoría padre del catálogo."
+              : isSubcategoriaCreate
+                ? `Se creará bajo “${padreNombre ?? "la categoría seleccionada"}”.`
+                : "Registra una categoría principal del catálogo."}
           </DialogDescription>
         </DialogHeader>
 
@@ -120,24 +145,35 @@ export function ModalCategoria({
               id="nombre"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
-              placeholder="Ej: Microcontroladores, Sensores, Resistencias"
+              placeholder="Nombre de categoría"
               required
             />
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="padre">Categoría Padre (Opcional para Jerarquía SRS-CAT-007)</Label>
-            <SmartCombobox
-              options={categoriaPadreOptions}
-              value={categoriaPadreId}
-              onValueChange={setCategoriaPadreId}
-              placeholder="Buscar categoría padre (o dejar vacío para principal)..."
-              emptyMessage="No se encontraron categorías padre disponibles."
-            />
-            <p className="text-[11px] text-muted-foreground">
-              Si no seleccionas ninguna, se registrará como Categoría Principal.
-            </p>
-          </div>
+          {lockParent ? (
+            <div className="space-y-1.5">
+              <Label>Categoría Padre</Label>
+              <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
+                {isRaizCreate
+                  ? "Ninguna (Categoría Raíz)"
+                  : padreNombre ?? "Categoría seleccionada"}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <Label htmlFor="padre">Categoría Padre (Opcional)</Label>
+              <SmartCombobox
+                options={categoriaPadreOptions}
+                value={categoriaPadreId}
+                onValueChange={setCategoriaPadreId}
+                placeholder="Categoría padre (opcional)..."
+                emptyMessage="No se encontraron categorías padre disponibles."
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Si no seleccionas ninguna, se registrará como Categoría Principal.
+              </p>
+            </div>
+          )}
 
           <DialogFooter className="pt-2">
             <Button
@@ -149,7 +185,13 @@ export function ModalCategoria({
               Cancelar
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Guardando..." : mode === "create" ? "Crear Categoría" : "Guardar Cambios"}
+              {isLoading
+                ? "Guardando..."
+                : mode === "create"
+                  ? isSubcategoriaCreate
+                    ? "Crear Subcategoría"
+                    : "Crear Categoría"
+                  : "Guardar Cambios"}
             </Button>
           </DialogFooter>
         </form>

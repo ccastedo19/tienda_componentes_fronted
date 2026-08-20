@@ -171,7 +171,7 @@ export function ModalCompra({
               options={proveedorOptions}
               value={proveedorId}
               onValueChange={setProveedorId}
-              placeholder="Buscar proveedor por nombre o teléfono..."
+              placeholder="Buscar proveedor..."
               emptyMessage="No se encontraron proveedores activos."
             />
           </div>
@@ -184,7 +184,7 @@ export function ModalCompra({
                   options={productoOptions}
                   value={selectedProdId}
                   onValueChange={setSelectedProdId}
-                  placeholder="Buscar producto o componente por nombre o SKU..."
+                  placeholder="Buscar producto..."
                   emptyMessage="No se encontraron productos en el catálogo."
                 />
               </div>
@@ -245,14 +245,17 @@ export function ModalCompra({
                             type="number"
                             step="0.01"
                             min="0"
-                            value={l.costoUnitario}
+                            value={l.costoUnitario || ""}
                             onChange={(e) =>
                               handleUpdateLinea(
                                 i,
                                 "costoUnitario",
-                                parseFloat(e.target.value) || 0
+                                e.target.value === ""
+                                  ? 0
+                                  : parseFloat(e.target.value) || 0
                               )
                             }
+                            placeholder="0"
                             className="h-7 text-right text-xs"
                           />
                         </td>

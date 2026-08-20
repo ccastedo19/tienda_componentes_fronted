@@ -319,7 +319,7 @@ export const Recepciones = () => {
           <DataTableSearch
             value={search}
             onChange={setSearch}
-            placeholder="Buscar por código, cliente o técnico..."
+            placeholder="Buscar orden..."
             className="w-full sm:max-w-sm"
           />
 
@@ -330,7 +330,7 @@ export const Recepciones = () => {
             }
           >
             <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Filtrar por estado" />
+              <SelectValue placeholder="Estado" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="TODOS">Todos los estados</SelectItem>

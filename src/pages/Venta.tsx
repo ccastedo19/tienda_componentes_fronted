@@ -811,7 +811,7 @@ export const Venta = () => {
             <div className="relative flex-1">
               <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Buscar producto por código, nombre o categoría..."
+                placeholder="Buscar producto..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9"
@@ -822,7 +822,7 @@ export const Venta = () => {
               onValueChange={(val) => setCatalogoTab(val as "productos" | "servicios")}
             >
               <TabsList>
-                <TabsTrigger value="productos">Componentes</TabsTrigger>
+                <TabsTrigger value="productos">Productos</TabsTrigger>
                 <TabsTrigger value="servicios">Servicios</TabsTrigger>
               </TabsList>
             </Tabs>
@@ -926,9 +926,9 @@ export const Venta = () => {
           )}
         </div>
 
-        <div className="space-y-4 lg:col-span-5">
-          <Card className="border-border shadow-xs">
-            <CardHeader className="p-3.5 pb-2">
+        <div className="space-y-3 lg:col-span-5">
+          <Card className="border-border shadow-xs pb-1">
+            <CardHeader className="pr-2 pl-2">
               <div className="flex items-center justify-between gap-2">
                 <CardTitle className="flex items-center gap-1.5 text-sm">
                   <User className="size-4" />
@@ -951,7 +951,7 @@ export const Venta = () => {
                 options={clienteOptions}
                 value={clienteOptionId}
                 onValueChange={handleSelectCliente}
-                placeholder="Buscar por CI/NIT o nombre completo..."
+                placeholder="Buscar cliente..."
                 emptyMessage="No se encontraron clientes."
                 className="w-full text-xs"
                 clearOnFocus
@@ -981,7 +981,7 @@ export const Venta = () => {
           </Card>
 
           <Card className="border-border shadow-xs">
-            <CardHeader className="border-b border-border p-3.5 pb-2">
+            <CardHeader className="border-b border-border p-3.5 pt-0">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-sm">
                   <ShoppingCart className="size-4" />
@@ -1105,13 +1105,16 @@ export const Venta = () => {
                               type="number"
                               min="0"
                               step="0.01"
-                              value={item.precioFinalAplicado}
+                              value={item.precioFinalAplicado || ""}
                               onChange={(e) =>
                                 handleUpdatePrecioServicio(
                                   index,
-                                  parseFloat(e.target.value) || 0
+                                  e.target.value === ""
+                                    ? 0
+                                    : parseFloat(e.target.value) || 0
                                 )
                               }
+                              placeholder="0"
                               className="h-6 w-20 px-1.5 text-xs"
                             />
                           </div>
@@ -1127,7 +1130,9 @@ export const Venta = () => {
                             onChange={(e) =>
                               handleUpdateDescuento(
                                 index,
-                                parseFloat(e.target.value) || 0
+                                e.target.value === ""
+                                  ? 0
+                                  : parseFloat(e.target.value) || 0
                               )
                             }
                             className="h-6 w-16 px-1 text-xs"
@@ -1149,7 +1154,7 @@ export const Venta = () => {
                             options={serieOptions}
                             value={item.selectedSerieId}
                             onValueChange={(value) => handleSelectSerie(index, value)}
-                            placeholder="Buscar / seleccionar serie..."
+                            placeholder="Buscar serie..."
                             emptyMessage="No se encontraron series."
                             className="w-full text-xs"
                           />
@@ -1258,10 +1263,10 @@ export const Venta = () => {
 
             {metodoPago === "Pago Mixto" && (
               <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3 text-xs">
-                <p className="font-semibold text-foreground">Fraccionamiento Simultáneo</p>
+                
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <Label htmlFor="fracEfectivo">Fracción Efectivo (Bs.)</Label>
+                    <Label htmlFor="fracEfectivo">Pago en Efectivo (Bs.)</Label>
                     <Input
                       id="fracEfectivo"
                       type="number"
@@ -1273,7 +1278,7 @@ export const Venta = () => {
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="fracQr">Fracción QR (Bs.)</Label>
+                    <Label htmlFor="fracQr">Pago en QR (Bs.)</Label>
                     <Input
                       id="fracQr"
                       type="number"
@@ -1307,20 +1312,20 @@ export const Venta = () => {
                 <div className="space-y-2">
                   <Input
                     type="email"
-                    placeholder="Correo de Administrador"
+                    placeholder="Correo admin"
                     value={adminEmail}
                     onChange={(e) => setAdminEmail(e.target.value)}
                     required
                   />
                   <Input
                     type="password"
-                    placeholder="Contraseña de Administrador"
+                    placeholder="Contraseña"
                     value={adminPassword}
                     onChange={(e) => setAdminPassword(e.target.value)}
                     required
                   />
                   <Textarea
-                    placeholder="Justificación técnica obligatoria de la excepción de precio..."
+                    placeholder="Justificación del bypass..."
                     value={justificacionBypass}
                     onChange={(e) => setJustificacionBypass(e.target.value)}
                     rows={2}
@@ -1333,13 +1338,14 @@ export const Venta = () => {
             <DialogFooter className="pt-2">
               <Button
                 type="button"
+                className="cursor-pointer"
                 variant="outline"
                 onClick={() => setIsCheckoutModalOpen(false)}
                 disabled={isProcessing}
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isProcessing}>
+              <Button type="submit" className="cursor-pointer" disabled={isProcessing}>
                 {isProcessing ? "Confirmando Venta..." : "Confirmar Venta"}
               </Button>
             </DialogFooter>
@@ -1364,7 +1370,7 @@ export const Venta = () => {
                 options={proformaOptions}
                 value={proformaOptionId}
                 onValueChange={setProformaOptionId}
-                placeholder="Buscar proforma por CI, nombre o código..."
+                placeholder="Buscar proforma..."
                 emptyMessage="No se encontraron proformas pendientes."
                 className="w-full"
               />
@@ -1426,7 +1432,7 @@ export const Venta = () => {
                 options={ordenOptions}
                 value={ordenOptionId}
                 onValueChange={setOrdenOptionId}
-                placeholder="Buscar por código de orden, cliente o NIT..."
+                placeholder="Buscar orden..."
                 emptyMessage="No se encontraron órdenes técnicas pendientes o activas."
                 className="w-full"
               />

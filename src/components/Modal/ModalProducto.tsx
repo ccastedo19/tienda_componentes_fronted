@@ -41,10 +41,10 @@ export function ModalProducto({
   const [nombreComercial, setNombreComercial] = useState("")
   const [descripcion, setDescripcion] = useState("")
   const [categoriaId, setCategoriaId] = useState("")
-  const [precioCosto, setPrecioCosto] = useState("0")
-  const [precioVenta, setPrecioVenta] = useState("0")
+  const [precioCosto, setPrecioCosto] = useState("")
+  const [precioVenta, setPrecioVenta] = useState("")
   const [umbralStockMinimo, setUmbralStockMinimo] = useState("5")
-  const [stockActual, setStockActual] = useState("0")
+  const [stockActual, setStockActual] = useState("")
   const [imagenUrl, setImagenUrl] = useState<string | null>(null)
   const [imagenPublicId, setImagenPublicId] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -68,10 +68,10 @@ export function ModalProducto({
       setNombreComercial("")
       setDescripcion("")
       setCategoriaId(categorias[0]?.id || "")
-      setPrecioCosto("0")
-      setPrecioVenta("0")
+      setPrecioCosto("")
+      setPrecioVenta("")
       setUmbralStockMinimo("5")
-      setStockActual("0")
+      setStockActual("")
       setImagenUrl(null)
       setImagenPublicId(null)
     }
@@ -179,7 +179,7 @@ export function ModalProducto({
                 id="sku"
                 value={skuUnico}
                 onChange={(e) => setSkuUnico(e.target.value.toUpperCase())}
-                placeholder="Ej: ESP32-WROOM, CAB-USB-2M"
+                placeholder="Ej: ESP32-WROOM"
                 disabled={mode === "edit"}
                 required
               />
@@ -195,7 +195,7 @@ export function ModalProducto({
                 }))}
                 value={categoriaId || null}
                 onValueChange={(val) => setCategoriaId(val ?? "")}
-                placeholder="Buscar categoría..."
+                placeholder="Categoría..."
                 emptyMessage="No se encontraron categorías."
               />
             </div>
@@ -207,7 +207,7 @@ export function ModalProducto({
               id="nombre"
               value={nombreComercial}
               onChange={(e) => setNombreComercial(e.target.value)}
-              placeholder="Ej: Módulo ESP32 Wi-Fi + Bluetooth CP2102"
+              placeholder="Nombre del producto"
               required
             />
           </div>
@@ -218,7 +218,7 @@ export function ModalProducto({
               id="descripcion"
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
-              placeholder="Especificaciones, voltaje de operación, pines, etc."
+              placeholder="Descripción técnica..."
               rows={2}
             />
           </div>
@@ -237,6 +237,7 @@ export function ModalProducto({
                   min="0"
                   value={precioCosto}
                   onChange={(e) => setPrecioCosto(e.target.value)}
+                  placeholder="0.00"
                   className="pl-8"
                   required
                 />
@@ -256,6 +257,7 @@ export function ModalProducto({
                   min="0"
                   value={precioVenta}
                   onChange={(e) => setPrecioVenta(e.target.value)}
+                  placeholder="0.00"
                   className="pl-8"
                   required
                 />
@@ -284,6 +286,7 @@ export function ModalProducto({
                 min="0"
                 value={stockActual}
                 onChange={(e) => setStockActual(e.target.value)}
+                placeholder="0"
               />
             </div>
           )}

@@ -200,7 +200,7 @@ export function ModalCliente({
               type="text"
               inputMode="numeric"
               value={values.ci}
-              placeholder="Ej: 8654153012 (Opcional)"
+              placeholder="CI / NIT (opcional)"
               onChange={(event) => updateField("ci", event.target.value.replace(/[^0-9]/g, ""))}
               maxLength={14}
             />
@@ -243,7 +243,7 @@ export function ModalCliente({
               name="telefono"
               type="tel"
               value={values.telefono}
-              placeholder="Ej: 71234567"
+              placeholder="Teléfono"
               onChange={(event) => updateField("telefono", event.target.value)}
             />
             {errors.telefono && <p className="text-xs text-destructive">{errors.telefono}</p>}
@@ -256,7 +256,7 @@ export function ModalCliente({
               name="email"
               type="email"
               value={values.email}
-              placeholder="cliente@ejemplo.com"
+              placeholder="Correo"
               onChange={(event) => updateField("email", event.target.value)}
             />
             {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}

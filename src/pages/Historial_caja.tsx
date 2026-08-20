@@ -187,7 +187,7 @@ export const Historial_caja = () => {
         <DataTableSearch
           value={search}
           onChange={setSearch}
-          placeholder="Buscar por operador o estado..."
+          placeholder="Buscar historial..."
         />
         <Button
           type="button"

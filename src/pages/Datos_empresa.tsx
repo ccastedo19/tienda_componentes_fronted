@@ -134,7 +134,7 @@ export const Datos_empresa = () => {
                       id="nit"
                       value={nit}
                       onChange={(e) => setNit(e.target.value)}
-                      placeholder="Ej: 1029384756"
+                      placeholder="NIT / CI"
                       required
                     />
                   </div>
@@ -149,7 +149,7 @@ export const Datos_empresa = () => {
                         id="tel"
                         value={telefono}
                         onChange={(e) => setTelefono(e.target.value)}
-                        placeholder="+591 7046789"
+                        placeholder="Teléfono"
                         className="pl-8"
                         required
                       />
@@ -165,7 +165,7 @@ export const Datos_empresa = () => {
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="contacto@empresa.com"
+                        placeholder="Correo"
                         className="pl-8"
                         required
                       />
@@ -180,7 +180,7 @@ export const Datos_empresa = () => {
                         id="web"
                         value={sitioWeb}
                         onChange={(e) => setSitioWeb(e.target.value)}
-                        placeholder="https://www.empresa.com"
+                        placeholder="Sitio web"
                         className="pl-8"
                       />
                     </div>
@@ -195,7 +195,7 @@ export const Datos_empresa = () => {
                       id="dir"
                       value={direccion}
                       onChange={(e) => setDireccion(e.target.value)}
-                      placeholder="Av. 6 de Agosto #2450"
+                      placeholder="Dirección"
                       className="pl-8"
                       required
                     />
@@ -208,7 +208,7 @@ export const Datos_empresa = () => {
                     id="pie"
                     value={pieNotaVenta}
                     onChange={(e) => setPieNotaVenta(e.target.value)}
-                    placeholder="Texto de agradecimiento, políticas de cambio o garantías..."
+                    placeholder="Nota de pie / políticas..."
                     rows={3}
                   />
                 </div>
