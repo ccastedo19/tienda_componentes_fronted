@@ -9,6 +9,8 @@ import {
   User,
   ShieldAlert,
   HelpCircle,
+  QrCode,
+  Banknote,
 } from "lucide-react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -34,6 +36,7 @@ export const Apertura_cierre = () => {
   // Form states
   const [montoInicial, setMontoInicial] = useState<string>("")
   const [recuentoFisico, setRecuentoFisico] = useState<string>("")
+  const [recuentoQr, setRecuentoQr] = useState<string>("")
   const [resultadoCierre, setResultadoCierre] = useState<Caja | null>(null)
 
   const esAdmin =
@@ -91,9 +94,15 @@ export const Apertura_cierre = () => {
 
   const handleCerrarCaja = async (e: React.FormEvent) => {
     e.preventDefault()
-    const recuento = parseFloat(recuentoFisico)
-    if (isNaN(recuento) || recuento < 0) {
-      setError("Por favor ingresa un monto de recuento físico válido (mayor o igual a 0).")
+    const recuentoEf = parseFloat(recuentoFisico)
+    if (isNaN(recuentoEf) || recuentoEf < 0) {
+      setError("Por favor ingresa un monto de recuento físico en efectivo válido (mayor o igual a 0).")
+      return
+    }
+
+    const recuentoQ = parseFloat(recuentoQr)
+    if (isNaN(recuentoQ) || recuentoQ < 0) {
+      setError("Por favor ingresa el monto verificado de pagos por QR (mayor o igual a 0).")
       return
     }
 
@@ -101,10 +110,14 @@ export const Apertura_cierre = () => {
     setError(null)
 
     try {
-      const resultado = await cerrarCaja({ recuentoFisico: recuento })
+      const resultado = await cerrarCaja({
+        recuentoFisico: recuentoEf,
+        recuentoQr: recuentoQ,
+      })
       setResultadoCierre(resultado)
       setCajaActiva(null)
       setRecuentoFisico("")
+      setRecuentoQr("")
     } catch (err) {
       const msg = err instanceof ApiRequestError ? err.message : "Error al procesar el cierre de caja."
       setError(msg)
@@ -130,7 +143,7 @@ export const Apertura_cierre = () => {
           Gestión de Cajas y Arqueo Diario
         </h1>
         <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-          Control centralizado de apertura de caja única, arqueo de recuento a ciegas y cierre supervisado por el Administrador.
+          Control centralizado de apertura de caja, conciliación en efectivo y QR, y cierre supervisado por el Administrador.
         </p>
       </div>
 
@@ -153,7 +166,7 @@ export const Apertura_cierre = () => {
                 ) : (
                   <AlertTriangle className="size-5 text-amber-600 dark:text-amber-400" />
                 )}
-                <CardTitle className="text-lg">Resumen del Arqueo de Cierre</CardTitle>
+                <CardTitle className="text-lg">Resumen del Arqueo de Cierre (Efectivo + QR)</CardTitle>
               </div>
               <Badge
                 variant={
@@ -170,49 +183,120 @@ export const Apertura_cierre = () => {
             <CardDescription>
               La sesión de caja ha sido cerrada de forma inmutable.{" "}
               {resultadoCierre.usuarioCierreNombre &&
-                resultadoCierre.usuarioCierreNombre !== resultadoCierre.usuarioNombre ? (
+              resultadoCierre.usuarioCierreNombre !== resultadoCierre.usuarioNombre ? (
                 <span className="font-semibold text-primary">
                   (Cierre ejecutado por Administrador: {resultadoCierre.usuarioCierreNombre})
                 </span>
               ) : null}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="rounded-lg border border-border p-3">
-                <span className="text-xs text-muted-foreground">Saldo Esperado en Efectivo</span>
-                <p className="text-lg font-bold text-foreground">Bs. {resultadoCierre.montoEsperado.toFixed(2)}</p>
+          <CardContent className="space-y-4 text-sm">
+            {/* Tabla comparativa Efectivo vs QR */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Sección Efectivo */}
+              <div className="rounded-lg border border-border p-3.5 space-y-2 bg-muted/10">
+                <div className="flex items-center gap-1.5 font-semibold text-foreground pb-1 border-b border-border">
+                  <Banknote className="size-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>Conciliación en Efectivo</span>
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Esperado en Cajón:</span>
+                  <span className="font-medium text-foreground">
+                    Bs. {(resultadoCierre.montoEsperadoEfectivo ?? 0).toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Recuento Físico Reportado:</span>
+                  <span className="font-medium text-foreground">
+                    Bs. {(resultadoCierre.recuentoFisico ?? 0).toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs pt-1 border-t border-border">
+                  <span className="font-medium">Diferencia Efectivo:</span>
+                  <span
+                    className={`font-bold ${
+                      (resultadoCierre.diferenciaEfectivo ?? 0) === 0
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : (resultadoCierre.diferenciaEfectivo ?? 0) < 0
+                        ? "text-destructive"
+                        : "text-amber-600 dark:text-amber-400"
+                    }`}
+                  >
+                    {(resultadoCierre.diferenciaEfectivo ?? 0) > 0 ? "+" : ""}
+                    Bs. {(resultadoCierre.diferenciaEfectivo ?? 0).toFixed(2)}
+                  </span>
+                </div>
               </div>
-              <div className="rounded-lg border border-border p-3">
-                <span className="text-xs text-muted-foreground">Recuento Físico Reportado</span>
-                <p className="text-lg font-bold text-foreground">Bs. {(resultadoCierre.recuentoFisico ?? 0).toFixed(2)}</p>
+
+              {/* Sección QR */}
+              <div className="rounded-lg border border-border p-3.5 space-y-2 bg-muted/10">
+                <div className="flex items-center gap-1.5 font-semibold text-foreground pb-1 border-b border-border">
+                  <QrCode className="size-4 text-blue-600 dark:text-blue-400" />
+                  <span>Conciliación de Pagos QR</span>
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Esperado por Ventas QR:</span>
+                  <span className="font-medium text-foreground">
+                    Bs. {(resultadoCierre.montoEsperadoQr ?? 0).toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Monto QR Verificado:</span>
+                  <span className="font-medium text-foreground">
+                    Bs. {(resultadoCierre.recuentoQr ?? 0).toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs pt-1 border-t border-border">
+                  <span className="font-medium">Diferencia QR:</span>
+                  <span
+                    className={`font-bold ${
+                      (resultadoCierre.diferenciaQr ?? 0) === 0
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : (resultadoCierre.diferenciaQr ?? 0) < 0
+                        ? "text-destructive"
+                        : "text-amber-600 dark:text-amber-400"
+                    }`}
+                  >
+                    {(resultadoCierre.diferenciaQr ?? 0) > 0 ? "+" : ""}
+                    Bs. {(resultadoCierre.diferenciaQr ?? 0).toFixed(2)}
+                  </span>
+                </div>
               </div>
-              <div className="rounded-lg border border-border p-3">
-                <span className="text-xs text-muted-foreground">Diferencia Final</span>
-                <p
-                  className={`text-lg font-bold ${resultadoCierre.diferenciaMonto === 0
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : resultadoCierre.diferenciaMonto < 0
+            </div>
+
+            {/* Fila Total Global */}
+            <div className="rounded-lg border border-border bg-background p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div className="text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground">Total General de la Jornada:</span>
+                {" "}Bs. {((resultadoCierre.montoEsperadoEfectivo ?? 0) + (resultadoCierre.montoEsperadoQr ?? 0)).toFixed(2)} esperados vs. Bs. {((resultadoCierre.recuentoFisico ?? 0) + (resultadoCierre.recuentoQr ?? 0)).toFixed(2)} reportados
+              </div>
+              <div className="text-sm font-bold flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">Diferencia Neta:</span>
+                <span
+                  className={
+                    resultadoCierre.diferenciaMonto === 0
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : resultadoCierre.diferenciaMonto < 0
                       ? "text-destructive"
                       : "text-amber-600 dark:text-amber-400"
-                    }`}
+                  }
                 >
                   {resultadoCierre.diferenciaMonto > 0 ? "+" : ""}
                   Bs. {resultadoCierre.diferenciaMonto.toFixed(2)}
-                </p>
+                </span>
               </div>
             </div>
 
             {resultadoCierre.estado !== "Caja Cuadrada" && (
               <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 text-xs text-amber-800 dark:text-amber-300">
-                SRS-CAJ-008: Se ha emitido una alerta automática al panel del Administrador por discrepancia de saldo ({resultadoCierre.estado}).
+                SRS-CAJ-008: Se ha emitido una alerta automática al panel del Administrador por discrepancia en el arqueo ({resultadoCierre.estado}).
               </div>
             )}
           </CardContent>
         </Card>
       )}
 
-      {/* ESTADO 1: Caja NO abierta -> Formulario de Apertura */}
+      {/* ESTADO 1: Caja NO abierta -> Formulario de Apertura (Solo Efectivo) */}
       {!cajaActiva ? (
         <Card className="border-border shadow-sm">
           <CardHeader>
@@ -221,7 +305,7 @@ export const Apertura_cierre = () => {
               <CardTitle>Apertura de Sesión de Caja Única</CardTitle>
             </div>
             <CardDescription>
-              Inicia la jornada de cobro para habilitar el Punto de Venta (POS). Solo puede haber 1 caja abierta en el sistema.
+              Inicia la jornada de cobro para habilitar el Punto de Venta (POS). La apertura se realiza únicamente con el efectivo base.
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleAbrirCaja}>
@@ -245,7 +329,7 @@ export const Apertura_cierre = () => {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  SRS-CAJ-002: Ingresa el saldo base en billetes y monedas con el que arranca el cajón.
+                  SRS-CAJ-002: Ingresa el saldo base en billetes y monedas con el que arranca el cajón físico.
                 </p>
               </div>
 
@@ -267,7 +351,7 @@ export const Apertura_cierre = () => {
           </form>
         </Card>
       ) : (
-        /* ESTADO 2: Caja Abierta -> Panel Activo + Formulario de Cierre a Ciegas */
+        /* ESTADO 2: Caja Abierta -> Panel Activo + Formulario de Cierre Ciego con Efectivo + QR */
         <div className="space-y-6">
           <Card className="border-border shadow-sm bg-gradient-to-br from-card to-muted/20">
             <CardHeader>
@@ -283,11 +367,12 @@ export const Apertura_cierre = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Información de Operador y Apertura */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                 <div className="flex items-center gap-2 p-2.5 rounded-lg border border-border bg-background">
                   <User className="size-4 text-muted-foreground shrink-0" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Operador Responsable (Apertura)</p>
+                    <p className="text-xs text-muted-foreground">Operador Responsable</p>
                     <p className="font-medium text-foreground">{cajaActiva.usuarioNombre}</p>
                   </div>
                 </div>
@@ -301,15 +386,63 @@ export const Apertura_cierre = () => {
                 </div>
 
                 <div className="flex items-center gap-2 p-2.5 rounded-lg border border-border bg-background">
-                  <span className="size-4 text-xs font-bold text-muted-foreground shrink-0 flex items-center justify-center">
-                    Bs
-                  </span>
+                  <Banknote className="size-4 text-muted-foreground shrink-0" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Monto Inicial en Efectivo</p>
+                    <p className="text-xs text-muted-foreground">Monto Inicial (Efectivo)</p>
                     <p className="font-medium text-foreground">Bs. {cajaActiva.montoInicial.toFixed(2)}</p>
                   </div>
                 </div>
               </div>
+
+              {/* Tarjetas de Métricas en Tiempo Real (Efectivo vs QR) - Solo visibles para Administrador */}
+              {esAdmin ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                  {/* Saldo Esperado en Efectivo */}
+                  <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3.5 space-y-1">
+                    <div className="flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-300 font-medium">
+                      <span className="flex items-center gap-1">
+                        <Banknote className="size-4" />
+                        Saldo Esperado en Efectivo
+                      </span>
+                      <span className="text-[11px] opacity-80 font-normal">(Supervisión Admin)</span>
+                    </div>
+                    <p className="text-xl font-bold text-foreground">
+                      Bs. {(cajaActiva.montoEsperadoEfectivo ?? cajaActiva.montoEsperado ?? 0).toFixed(2)}
+                    </p>
+                    <div className="text-[11px] text-muted-foreground flex items-center justify-between pt-1 border-t border-emerald-500/10">
+                      <span>Ventas Ef: +Bs. {(cajaActiva.totalVentasEfectivo ?? 0).toFixed(2)}</span>
+                      <span>Mermas: -Bs. {(cajaActiva.totalMermasEfectivo ?? 0).toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  {/* Total Esperado por QR */}
+                  <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-3.5 space-y-1">
+                    <div className="flex items-center justify-between text-xs text-blue-700 dark:text-blue-300 font-medium">
+                      <span className="flex items-center gap-1">
+                        <QrCode className="size-4" />
+                        Total Esperado por QR
+                      </span>
+                      <span className="text-[11px] opacity-80 font-normal">(Supervisión Admin)</span>
+                    </div>
+                    <p className="text-xl font-bold text-foreground">
+                      Bs. {(cajaActiva.montoEsperadoQr ?? 0).toFixed(2)}
+                    </p>
+                    <div className="text-[11px] text-muted-foreground flex items-center justify-between pt-1 border-t border-blue-500/10">
+                      <span>Ventas QR acumuladas en la jornada</span>
+                      <span className="font-semibold text-blue-600 dark:text-blue-400">
+                        Bs. {(cajaActiva.totalVentasQr ?? cajaActiva.montoEsperadoQr ?? 0).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 p-3 rounded-lg border border-border bg-muted/20 text-xs text-muted-foreground">
+                  <HelpCircle className="size-4 shrink-0 text-muted-foreground" />
+                  <span>
+                    Arqueo a ciegas activo (SRS-CAJ-005): El recuento físico y de pagos QR se efectúa sin visualización previa de saldos esperados para garantizar la transparencia contable.
+                  </span>
+                </div>
+              )}
 
               {/* Mensajes de permisos según rol */}
               {esAdmin && !esCreadorCaja && (
@@ -317,7 +450,7 @@ export const Apertura_cierre = () => {
                   <ShieldAlert className="size-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                   <div>
                     <span className="font-semibold">Supervisión Administrativa:</span> Esta sesión fue abierta por{" "}
-                    <strong>{cajaActiva.usuarioNombre}</strong>. Como Administrador, puedes efectuar el recuento físico y cerrar la caja en su nombre si el vendedor fue desactivado, finalizó su turno o se encuentra ausente.
+                    <strong>{cajaActiva.usuarioNombre}</strong>. Como Administrador, puedes efectuar el recuento y cerrar la caja en su nombre si el vendedor fue desactivado, finalizó su turno o se encuentra ausente.
                   </div>
                 </div>
               )}
@@ -334,42 +467,82 @@ export const Apertura_cierre = () => {
             </CardContent>
           </Card>
 
-          {/* Formulario de Cierre Ciego */}
+          {/* Formulario de Cierre Ciego: Efectivo + QR */}
           <Card className="border-border shadow-sm">
             <CardHeader>
               <div className="flex items-center gap-2 text-foreground">
                 <Lock className="size-5 text-amber-600 dark:text-amber-400" />
-                <CardTitle>Cierre de Jornada y Arqueo Físico</CardTitle>
+                <CardTitle>Cierre de Jornada y Arqueo (Efectivo + QR)</CardTitle>
               </div>
               <CardDescription>
-                SRS-CAJ-005: Formulario de arqueo a ciegas. Cuenta el dinero físico presente en el cajón e ingresa el total exacto.
+                SRS-CAJ-005: Formulario de arqueo a ciegas. Cuenta el dinero físico presente en el cajón y verifica las transferencias QR recibidas en el banco.
               </CardDescription>
             </CardHeader>
             <form onSubmit={handleCerrarCaja}>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="recuentoFisico">Recuento Físico en Efectivo (Bs. Conteo Ciego) *</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
-                      Bs.
-                    </span>
-                    <Input
-                      id="recuentoFisico"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={recuentoFisico}
-                      onChange={(e) => setRecuentoFisico(e.target.value)}
-                      placeholder="0.00"
-                      className="pl-9 text-base"
-                      disabled={!puedeCerrar || isSubmitting}
-                      required
-                    />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* 1. Recuento Físico Efectivo */}
+                  <div className="space-y-2">
+                    <Label htmlFor="recuentoFisico" className="flex items-center gap-1.5">
+                      <Banknote className="size-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Recuento Físico en Efectivo (Bs.) *</span>
+                    </Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+                        Bs.
+                      </span>
+                      <Input
+                        id="recuentoFisico"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={recuentoFisico}
+                        onChange={(e) => setRecuentoFisico(e.target.value)}
+                        placeholder="0.00"
+                        className="pl-9 text-base"
+                        disabled={!puedeCerrar || isSubmitting}
+                        required
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Conteo de billetes y monedas en el cajón físico.
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1 mb-3">
-                    <HelpCircle className="size-3.5" />
-                    El sistema comparará automáticamente este valor contra las ventas y mermas registradas para emitir el diagnóstico.
-                  </p>
+
+                  {/* 2. Recuento / Extracto QR */}
+                  <div className="space-y-2">
+                    <Label htmlFor="recuentoQr" className="flex items-center gap-1.5">
+                      <QrCode className="size-4 text-blue-600 dark:text-blue-400" />
+                      <span>Comprobación / Extracto QR (Bs.) *</span>
+                    </Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+                        Bs.
+                      </span>
+                      <Input
+                        id="recuentoQr"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={recuentoQr}
+                        onChange={(e) => setRecuentoQr(e.target.value)}
+                        placeholder="0.00"
+                        className="pl-9 text-base"
+                        disabled={!puedeCerrar || isSubmitting}
+                        required
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Total recibido y comprobado por QR en la cuenta bancaria.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground flex items-center gap-2">
+                  <HelpCircle className="size-4 shrink-0 text-muted-foreground" />
+                  <span>
+                    El sistema conciliará por separado los importes en efectivo y las transferencias QR para emitir el diagnóstico de arqueo.
+                  </span>
                 </div>
               </CardContent>
               <CardFooter>
