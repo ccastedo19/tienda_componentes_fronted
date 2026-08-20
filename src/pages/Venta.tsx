@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react"
+import { useState, useEffect, useMemo } from "react"
 import {
   ShoppingCart,
   Search,
@@ -11,8 +11,6 @@ import {
   AlertTriangle,
   Lock,
   CheckCircle2,
-  Download,
-  Printer,
   Eye,
   Cpu,
   Wrench,
@@ -23,6 +21,7 @@ import {
 import { Link, useLocation } from "react-router-dom"
 
 import { ModalCliente } from "@/components/Modal/ModalCliente"
+import { ModalTicketVenta } from "@/components/Modal/ModalTicketVenta"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -48,11 +47,7 @@ import { getCotizaciones } from "@/services/cotizacion.service"
 import { getOrdenesTecnicas } from "@/services/ordenTecnica.service"
 import { getProductos, getSeriesByProducto } from "@/services/producto.service"
 import { getServicios } from "@/services/servicio.service"
-import {
-  descargarNotaVentaPdf,
-  getNotaVentaPdfObjectUrl,
-  procesarCheckout,
-} from "@/services/venta.service"
+import { procesarCheckout } from "@/services/venta.service"
 import type { Caja } from "@/types/caja"
 import type { Cliente } from "@/types/cliente"
 import type { Cotizacion } from "@/types/cotizacion"
@@ -124,11 +119,7 @@ export const Venta = () => {
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [ventaCompletada, setVentaCompletada] = useState<VentaModel | null>(null)
-
-  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false)
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
-  const [isLoadingPdf, setIsLoadingPdf] = useState(false)
-  const pdfIframeRef = useRef<HTMLIFrameElement>(null)
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false)
 
   const refreshProductos = async () => {
     try {
@@ -161,14 +152,6 @@ export const Venta = () => {
     }
     void initData()
   }, [])
-
-  useEffect(() => {
-    return () => {
-      if (pdfUrl) {
-        window.URL.revokeObjectURL(pdfUrl)
-      }
-    }
-  }, [pdfUrl])
 
   const clienteOptions = useMemo<SmartComboboxOption[]>(() => {
     const options: SmartComboboxOption[] = [
@@ -546,39 +529,8 @@ export const Venta = () => {
     }
   }, [cart])
 
-  const openVentaPdfModal = async (venta: VentaModel) => {
-    setIsPdfModalOpen(true)
-    setIsLoadingPdf(true)
-    setError(null)
-
-    try {
-      const url = await getNotaVentaPdfObjectUrl(venta.id)
-      setPdfUrl((prev) => {
-        if (prev) window.URL.revokeObjectURL(prev)
-        return url
-      })
-    } catch {
-      setError("No se pudo cargar el PDF de la venta.")
-      setIsPdfModalOpen(false)
-    } finally {
-      setIsLoadingPdf(false)
-    }
-  }
-
-  const handlePrintPdf = () => {
-    const iframe = pdfIframeRef.current
-    if (iframe?.contentWindow) {
-      iframe.contentWindow.focus()
-      iframe.contentWindow.print()
-      return
-    }
-
-    if (pdfUrl) {
-      const printWindow = window.open(pdfUrl, "_blank")
-      printWindow?.addEventListener("load", () => {
-        printWindow.print()
-      })
-    }
+  const openVentaTicketModal = () => {
+    setIsTicketModalOpen(true)
   }
 
   const handleConfirmCheckout = async (e: React.FormEvent) => {
@@ -666,7 +618,7 @@ export const Venta = () => {
       setJustificacionBypass("")
 
       await refreshProductos()
-      await openVentaPdfModal(venta)
+      setIsTicketModalOpen(true)
     } catch (err) {
       const msg = err instanceof ApiRequestError ? err.message : "Error al procesar el cobro."
       setError(msg)
@@ -795,11 +747,11 @@ export const Venta = () => {
               type="button"
               variant="outline"
               size="xs"
-              onClick={() => void openVentaPdfModal(ventaCompletada)}
+              onClick={openVentaTicketModal}
               className="gap-1 bg-background text-foreground"
             >
               <Eye className="size-3.5" />
-              Ver venta
+              Ver ticket
             </Button>
           </AlertDescription>
         </Alert>
@@ -1481,84 +1433,11 @@ export const Venta = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={isPdfModalOpen}
-        onOpenChange={(open) => {
-          setIsPdfModalOpen(open)
-          if (!open) {
-            setPdfUrl((prev) => {
-              if (prev) window.URL.revokeObjectURL(prev)
-              return null
-            })
-          }
-        }}
-      >
-        <DialogContent
-          className="flex h-[90vh] w-[90vw] max-w-[90vw] flex-col gap-0 overflow-hidden p-0 sm:max-w-[90vw]"
-          showCloseButton
-        >
-          <DialogHeader className="shrink-0 border-b border-border px-4 py-3">
-            <DialogTitle>
-              Nota de venta {ventaCompletada?.codigoNotaVenta ?? ""}
-            </DialogTitle>
-            <DialogDescription>
-              Visualiza, descarga o imprime el comprobante de la venta.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="min-h-0 flex-1 bg-muted/20 p-3">
-            {isLoadingPdf ? (
-              <div className="flex h-full items-center justify-center">
-                <Skeleton className="h-full w-full" />
-              </div>
-            ) : pdfUrl ? (
-              <iframe
-                ref={pdfIframeRef}
-                src={pdfUrl}
-                title="Nota de venta PDF"
-                className="h-full w-full rounded-md border border-border bg-background"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                No se pudo cargar el PDF.
-              </div>
-            )}
-          </div>
-
-          <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-t border-border bg-muted/50 p-3 sm:justify-between">
-            <Button type="button" variant="outline" onClick={() => setIsPdfModalOpen(false)}>
-              Cerrar
-            </Button>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={!ventaCompletada || isLoadingPdf}
-                onClick={() => {
-                  if (!ventaCompletada) return
-                  void descargarNotaVentaPdf(
-                    ventaCompletada.id,
-                    ventaCompletada.codigoNotaVenta
-                  )
-                }}
-                className="gap-1.5"
-              >
-                <Download className="size-4" />
-                Descargar PDF
-              </Button>
-              <Button
-                type="button"
-                disabled={!pdfUrl || isLoadingPdf}
-                onClick={handlePrintPdf}
-                className="gap-1.5"
-              >
-                <Printer className="size-4" />
-                Imprimir
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ModalTicketVenta
+        open={isTicketModalOpen}
+        onOpenChange={setIsTicketModalOpen}
+        venta={ventaCompletada}
+      />
 
       <ModalCliente
         open={isClientModalOpen}
