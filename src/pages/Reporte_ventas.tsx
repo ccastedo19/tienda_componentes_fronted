@@ -5,7 +5,7 @@ import { BarChart3, Eye, Calendar, CalendarDays, RotateCcw, Banknote, TrendingUp
 import { DataTable } from "@/components/data-table/data-table"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
 import { DataTableSearch } from "@/components/data-table/data-table-search"
-import { ModalPdfViewer } from "@/components/Modal/ModalPdfViewer"
+import { ModalTicketVenta } from "@/components/Modal/ModalTicketVenta"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,11 +14,7 @@ import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ApiRequestError } from "@/lib/api/client"
 import { formatDateTime, getLocalDateString, extractLocalDateString } from "@/lib/format-date"
-import {
-  descargarNotaVentaPdf,
-  getNotaVentaPdfObjectUrl,
-  getVentas,
-} from "@/services/venta.service"
+import { getVentas } from "@/services/venta.service"
 import type { Venta } from "@/types/venta"
 
 export const Reporte_ventas = () => {
@@ -31,11 +27,9 @@ export const Reporte_ventas = () => {
   const [fechaInicio, setFechaInicio] = useState<string>("")
   const [fechaFin, setFechaFin] = useState<string>("")
 
-  // PDF Viewer
-  const [pdfVenta, setPdfVenta] = useState<Venta | null>(null)
-  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false)
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
-  const [isLoadingPdf, setIsLoadingPdf] = useState(false)
+  // Ticket Viewer
+  const [ticketVenta, setTicketVenta] = useState<Venta | null>(null)
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false)
 
   const loadVentas = async () => {
     setIsLoading(true)
@@ -57,30 +51,9 @@ export const Reporte_ventas = () => {
     void loadVentas()
   }, [])
 
-  useEffect(() => {
-    return () => {
-      if (pdfUrl) window.URL.revokeObjectURL(pdfUrl)
-    }
-  }, [pdfUrl])
-
-  const openNotaVentaPdf = async (venta: Venta) => {
-    setPdfVenta(venta)
-    setIsPdfModalOpen(true)
-    setIsLoadingPdf(true)
-
-    try {
-      const url = await getNotaVentaPdfObjectUrl(venta.id)
-      setPdfUrl((prev) => {
-        if (prev) window.URL.revokeObjectURL(prev)
-        return url
-      })
-    } catch {
-      setError("No se pudo cargar el PDF de la nota de venta.")
-      setIsPdfModalOpen(false)
-      setPdfVenta(null)
-    } finally {
-      setIsLoadingPdf(false)
-    }
+  const openNotaVentaTicket = (venta: Venta) => {
+    setTicketVenta(venta)
+    setIsTicketModalOpen(true)
   }
 
   const handleFiltroHoy = () => {
@@ -220,11 +193,11 @@ export const Reporte_ventas = () => {
               type="button"
               variant="outline"
               size="xs"
-              onClick={() => void openNotaVentaPdf(v)}
+              onClick={() => openNotaVentaTicket(v)}
               className="cursor-pointer gap-1"
             >
               <Eye className="size-3" />
-              Ver nota
+              Ver ticket
             </Button>
           )
         },
@@ -374,27 +347,13 @@ export const Reporte_ventas = () => {
         </div>
       </div>
 
-      <ModalPdfViewer
-        open={isPdfModalOpen}
+      <ModalTicketVenta
+        open={isTicketModalOpen}
         onOpenChange={(open) => {
-          setIsPdfModalOpen(open)
-          if (!open) {
-            setPdfVenta(null)
-            setPdfUrl((prev) => {
-              if (prev) window.URL.revokeObjectURL(prev)
-              return null
-            })
-          }
+          setIsTicketModalOpen(open)
+          if (!open) setTicketVenta(null)
         }}
-        title={`Nota de venta ${pdfVenta?.codigoNotaVenta ?? ""}`}
-        description="Visualiza, descarga o imprime el comprobante de la venta."
-        pdfUrl={pdfUrl}
-        isLoading={isLoadingPdf}
-        iframeTitle="Nota de venta PDF"
-        onDownload={() => {
-          if (!pdfVenta) return
-          void descargarNotaVentaPdf(pdfVenta.id, pdfVenta.codigoNotaVenta)
-        }}
+        venta={ticketVenta}
       />
 
       {error && (
