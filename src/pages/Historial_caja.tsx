@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
-import { History, AlertTriangle } from "lucide-react"
+import { History, AlertTriangle, Banknote, QrCode } from "lucide-react"
 
 import { DataTable } from "@/components/data-table/data-table"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
@@ -103,42 +103,77 @@ export const Historial_caja = () => {
         ),
       },
       {
-        accessorKey: "montoEsperado",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Saldo Esperado" />,
-        cell: ({ row }) => (
-          <span className="font-medium text-foreground">Bs. {row.original.montoEsperado.toFixed(2)}</span>
-        ),
+        id: "desgloseEsperado",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Saldos Esperados" />,
+        cell: ({ row }) => {
+          const espEf = row.original.montoEsperadoEfectivo ?? row.original.montoEsperado ?? 0
+          const espQr = row.original.montoEsperadoQr ?? 0
+          return (
+            <div className="flex flex-col gap-0.5 text-xs">
+              <span className="flex items-center gap-1 font-medium text-foreground">
+                <Banknote className="size-3 text-emerald-600 dark:text-emerald-400" />
+                Ef: Bs. {espEf.toFixed(2)}
+              </span>
+              <span className="flex items-center gap-1 text-muted-foreground">
+                <QrCode className="size-3 text-blue-600 dark:text-blue-400" />
+                QR: Bs. {espQr.toFixed(2)}
+              </span>
+            </div>
+          )
+        },
       },
       {
-        accessorKey: "recuentoFisico",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Recuento Físico" />,
+        id: "desgloseReportado",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Recuentos Reportados" />,
         cell: ({ row }) => {
-          const rec = row.original.recuentoFisico
-          return <span>{rec !== null && rec !== undefined ? `Bs. ${rec.toFixed(2)}` : "-"}</span>
+          if (!row.original.fechaHoraCierre) return <span className="text-xs text-muted-foreground">-</span>
+          const recEf = row.original.recuentoFisico
+          const recQr = row.original.recuentoQr
+          return (
+            <div className="flex flex-col gap-0.5 text-xs">
+              <span className="flex items-center gap-1">
+                <Banknote className="size-3 text-emerald-600 dark:text-emerald-400" />
+                Ef: {recEf !== null && recEf !== undefined ? `Bs. ${recEf.toFixed(2)}` : "-"}
+              </span>
+              <span className="flex items-center gap-1 text-muted-foreground">
+                <QrCode className="size-3 text-blue-600 dark:text-blue-400" />
+                QR: {recQr !== null && recQr !== undefined ? `Bs. ${recQr.toFixed(2)}` : "-"}
+              </span>
+            </div>
+          )
         },
       },
       {
         accessorKey: "diferenciaMonto",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Diferencia" />,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Diferencia Total" />,
         cell: ({ row }) => {
           const diff = row.original.diferenciaMonto
           if (row.original.estado === "Abierta") return <span className="text-muted-foreground">-</span>
 
           const isZero = diff === 0
           const isNegative = diff < 0
+          const difEf = row.original.diferenciaEfectivo ?? 0
+          const difQr = row.original.diferenciaQr ?? 0
 
           return (
-            <span
-              className={`font-semibold ${
-                isZero
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : isNegative
-                  ? "text-destructive"
-                  : "text-amber-600 dark:text-amber-400"
-              }`}
-            >
-              {diff > 0 ? "+" : ""}Bs. {diff.toFixed(2)}
-            </span>
+            <div className="flex flex-col text-xs">
+              <span
+                className={`font-semibold ${
+                  isZero
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : isNegative
+                    ? "text-destructive"
+                    : "text-amber-600 dark:text-amber-400"
+                }`}
+              >
+                {diff > 0 ? "+" : ""}Bs. {diff.toFixed(2)}
+              </span>
+              {!isZero && (
+                <span className="text-[10px] text-muted-foreground">
+                  (Ef: {difEf >= 0 ? "+" : ""}{difEf.toFixed(2)} | QR: {difQr >= 0 ? "+" : ""}{difQr.toFixed(2)})
+                </span>
+              )}
+            </div>
           )
         },
       },
@@ -171,7 +206,7 @@ export const Historial_caja = () => {
             Historial de Cajas y Arqueos
           </h1>
           <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-            Auditoría histórica de aperturas, recuentos físicos y alertas por discrepancias financieras.
+            Auditoría histórica de aperturas, conciliaciones en efectivo y QR, y alertas por discrepancias financieras.
           </p>
         </div>
 
