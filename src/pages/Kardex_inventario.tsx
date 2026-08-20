@@ -155,6 +155,30 @@ export const Kardex_inventario = () => {
         },
       },
       {
+        accessorKey: "costoUnitario",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Costo Unit. (PMP)" />,
+        cell: ({ row }) => {
+          const cost = row.original.costoUnitario
+          return (
+            <span className="text-xs text-muted-foreground">
+              {cost !== undefined && cost !== null ? `Bs. ${cost.toFixed(2)}` : "-"}
+            </span>
+          )
+        },
+      },
+      {
+        accessorKey: "costoTotal",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Valor Movimiento" />,
+        cell: ({ row }) => {
+          const total = row.original.costoTotal
+          return (
+            <span className="text-xs font-medium text-foreground">
+              {total !== undefined && total !== null ? `Bs. ${total.toFixed(2)}` : "-"}
+            </span>
+          )
+        },
+      },
+      {
         accessorKey: "saldoExistencias",
         header: ({ column }) => <DataTableColumnHeader column={column} title="Saldo Existencias" />,
         cell: ({ row }) => (

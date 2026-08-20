@@ -33,6 +33,7 @@ export type DetalleVentaProducto = {
   sku: string
   cantidad: number
   precioUnitario: number
+  costoUnitarioHistorico?: number
   tipoDescuento?: string | null
   valorDescuento?: number
   subtotalNeto: number

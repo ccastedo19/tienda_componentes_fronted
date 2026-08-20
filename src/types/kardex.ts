@@ -7,4 +7,6 @@ export type KardexMovimiento = {
   tipoMovimiento: string
   cantidad: number
   saldoExistencias: number
+  costoUnitario?: number
+  costoTotal?: number
 }
