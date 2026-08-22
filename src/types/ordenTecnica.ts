@@ -42,9 +42,13 @@ export type OrdenTecnica = {
   tecnicoNombre: string
   fechaHoraIngreso: string
   fechaHoraFinalizacion?: string | null
-  estado: "Pendiente" | "En Proceso" | "Finalizada" | "Cancelada"
+  estado: "Pendiente" | "En Proceso" | "Finalizada" | "Pagada" | "Cancelada"
   diagnostico?: string
   observaciones?: string
+  ventaId?: string | null
+  codigoNotaVenta?: string | null
+  montoTotalCobrado?: number | null
+  metodoPagoVenta?: string | null
   componentes: DetalleComponenteOrden[]
   servicios: DetalleServicioOrden[]
 }

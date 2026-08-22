@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
-import { Plus, CheckCircle2, XCircle, Eye, ShoppingCart, UserCheck } from "lucide-react"
+import { Plus, CheckCircle2, XCircle, Eye, ShoppingCart, UserCheck, FileText } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 import { DataTable } from "@/components/data-table/data-table"
@@ -9,6 +9,7 @@ import { DataTableSearch } from "@/components/data-table/data-table-search"
 import { ModalAsignarTecnico } from "@/components/Modal/ModalAsignarTecnico"
 import { ModalDetalleOrdenTecnica } from "@/components/Modal/ModalDetalleOrdenTecnica"
 import { ModalOrdenTecnica } from "@/components/Modal/ModalOrdenTecnica"
+import { ModalTicketOrdenTecnica } from "@/components/Modal/ModalTicketOrdenTecnica"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -39,6 +40,7 @@ const ESTADOS_ORDEN: EstadoOrden[] = [
   "Pendiente",
   "En Proceso",
   "Finalizada",
+  "Pagada",
   "Cancelada",
 ]
 
@@ -62,6 +64,10 @@ export const Recepciones = () => {
   const [ordenParaAsignar, setOrdenParaAsignar] = useState<OrdenTecnica | null>(null)
   const [isAsignarOpen, setIsAsignarOpen] = useState(false)
 
+  // Ticket Rollo Modal
+  const [ticketOrden, setTicketOrden] = useState<OrdenTecnica | null>(null)
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false)
+
   const loadData = async () => {
     setIsLoading(true)
     setError(null)
@@ -74,17 +80,13 @@ export const Recepciones = () => {
         getUsers(),
       ])
       setOrdenes(ords)
-      setClientes(clis)
+      setClientes(clis.filter((c) => (c.estado ?? "Activo") !== "Eliminado"))
       setProductos(prods)
       setServicios(servs)
-      setTecnicos(users)
+      setTecnicos(users.filter((u) => u.estado === 1))
     } catch (err) {
-      const msg =
-        err instanceof ApiRequestError
-          ? err.message
-          : "No se pudieron cargar las órdenes técnicas."
+      const msg = err instanceof ApiRequestError ? err.message : "Error al cargar las órdenes técnicas."
       setError(msg)
-      setOrdenes([])
     } finally {
       setIsLoading(false)
     }
@@ -94,36 +96,24 @@ export const Recepciones = () => {
     void loadData()
   }, [])
 
-  const handleCambiarEstado = async (
-    orden: OrdenTecnica,
-    nuevoEstado: "Pendiente" | "En Proceso" | "Finalizada" | "Cancelada"
-  ) => {
+  const handleCambiarEstado = async (orden: OrdenTecnica, nuevoEstado: EstadoOrden) => {
     try {
-      const updated = await updateOrdenTecnicaEstado(orden.id, nuevoEstado)
-      setOrdenes((prev) =>
-        prev.map((o) => (o.id === orden.id ? { ...o, estado: updated.estado, fechaHoraFinalizacion: updated.fechaHoraFinalizacion } : o))
-      )
+      await updateOrdenTecnicaEstado(orden.id, nuevoEstado)
+      await loadData()
     } catch (err) {
-      const msg =
-        err instanceof ApiRequestError ? err.message : "Error al actualizar estado de la orden."
+      const msg = err instanceof ApiRequestError ? err.message : "No se pudo cambiar el estado de la orden."
       setError(msg)
     }
   }
 
-  const handleTecnicoAsignado = (updated: OrdenTecnica) => {
-    setOrdenes((prev) =>
-      prev.map((o) =>
-        o.id === updated.id
-          ? { ...o, tecnicoId: updated.tecnicoId, tecnicoNombre: updated.tecnicoNombre }
-          : o
-      )
-    )
+  const handleTecnicoAsignado = () => {
+    void loadData()
   }
 
   const ordenesFiltradas = useMemo(() => {
     if (filtroEstado === "TODOS") return ordenes
-    return ordenes.filter((orden) => orden.estado === filtroEstado)
-  }, [filtroEstado, ordenes])
+    return ordenes.filter((o) => o.estado === filtroEstado)
+  }, [ordenes, filtroEstado])
 
   const columns = useMemo<ColumnDef<OrdenTecnica, unknown>[]>(
     () => [
@@ -140,16 +130,9 @@ export const Recepciones = () => {
         accessorKey: "codigoOrden",
         header: ({ column }) => <DataTableColumnHeader column={column} title="Código Orden" />,
         cell: ({ row }) => (
-          <button
-            type="button"
-            onClick={() => {
-              setOrdenParaVer(row.original)
-              setIsDetalleOpen(true)
-            }}
-            className="font-mono text-[11px] font-semibold text-primary hover:underline cursor-pointer"
-          >
+          <Badge variant="outline" className="font-mono text-xs">
             {row.original.codigoOrden}
-          </button>
+          </Badge>
         ),
       },
       {
@@ -158,23 +141,20 @@ export const Recepciones = () => {
         cell: ({ row }) => (
           <div>
             <p className="font-medium text-foreground">{row.original.clienteNombre}</p>
-            <p className="text-xs text-muted-foreground">CI/NIT: {row.original.clienteCi}</p>
+            {row.original.clienteCi && (
+              <p className="text-xs text-muted-foreground">CI/NIT: {row.original.clienteCi}</p>
+            )}
           </div>
         ),
       },
       {
         accessorKey: "tecnicoNombre",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Técnico" />,
-        cell: ({ row }) => {
-          const tec = row.original.tecnicoNombre
-          return (
-            <div className="flex items-center gap-1.5">
-              <span className={tec ? "text-foreground" : "text-muted-foreground italic text-xs"}>
-                {tec || "Sin asignar"}
-              </span>
-            </div>
-          )
-        },
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Técnico Responsable" />,
+        cell: ({ row }) => (
+          <span className="text-xs text-foreground font-medium">
+            {row.original.tecnicoNombre || "Sin asignar"}
+          </span>
+        ),
       },
       {
         accessorKey: "fechaHoraIngreso",
@@ -199,9 +179,11 @@ export const Recepciones = () => {
         header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
         cell: ({ row }) => {
           const st = row.original.estado
+          const isPagada = st === "Pagada" || Boolean(row.original.ventaId)
           if (st === "Pendiente") return <Badge variant="warning">Pendiente</Badge>
           if (st === "En Proceso") return <Badge variant="info">En Proceso</Badge>
-          if (st === "Finalizada") return <Badge variant="success">Finalizada</Badge>
+          if (isPagada) return <Badge variant="success" className="gap-1"><CheckCircle2 className="size-3" />Pagada</Badge>
+          if (st === "Finalizada") return <Badge variant="secondary">Finalizada</Badge>
           return <Badge variant="destructive">Cancelada</Badge>
         },
       },
@@ -210,6 +192,7 @@ export const Recepciones = () => {
         header: "Acciones",
         cell: ({ row }) => {
           const ord = row.original
+          const isPagada = ord.estado === "Pagada" || Boolean(ord.ventaId)
 
           return (
             <div className="flex items-center gap-1">
@@ -227,8 +210,23 @@ export const Recepciones = () => {
                 <Eye className="size-3.5 text-muted-foreground hover:text-foreground" />
               </Button>
 
+              {/* Ver Comprobante de Taller (Ticket Rollo 80mm) */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                onClick={() => {
+                  setTicketOrden(ord)
+                  setIsTicketModalOpen(true)
+                }}
+                title="Ver e imprimir comprobante (Ticket Rollo 80mm)"
+                className="text-primary hover:bg-primary/10 cursor-pointer"
+              >
+                <FileText className="size-3.5" />
+              </Button>
+
               {/* Asignar / Cambiar Técnico */}
-              {ord.estado !== "Cancelada" && (
+              {!isPagada && ord.estado !== "Cancelada" && (
                 <Button
                   type="button"
                   variant="ghost"
@@ -244,8 +242,8 @@ export const Recepciones = () => {
                 </Button>
               )}
 
-              {/* Cobrar en POS */}
-              {ord.estado !== "Cancelada" && (
+              {/* Cobrar en POS (Solo si no está pagada ni cancelada) */}
+              {!isPagada && ord.estado !== "Cancelada" && (
                 <Button
                   type="button"
                   variant="ghost"
@@ -283,14 +281,14 @@ export const Recepciones = () => {
                 </Button>
               )}
 
-              {ord.estado !== "Finalizada" && ord.estado !== "Cancelada" && (
+              {!isPagada && ord.estado !== "Finalizada" && ord.estado !== "Cancelada" && (
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon-xs"
                   onClick={() => void handleCambiarEstado(ord, "Cancelada")}
+                  title="Cancelar orden de servicio"
                   className="text-destructive hover:bg-destructive/10"
-                  title="Cancelar Orden"
                 >
                   <XCircle className="size-3.5" />
                 </Button>
@@ -306,37 +304,30 @@ export const Recepciones = () => {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl flex items-center gap-2">
-          Taller y Órdenes de Servicio Técnico (Recepciones)
+        <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+          Taller de Servicio Técnico / Recepciones
         </h1>
         <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-          Gestión de reparaciones, repuestos retenidos (stockReservado), asignación de personal y liquidación en POS.
+          Gestión de recepción de equipos, asignación de técnicos, consumo de repuestos y control de estado de reparaciones.
         </p>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <div className="flex flex-1 items-center gap-3">
           <DataTableSearch
             value={search}
             onChange={setSearch}
-            placeholder="Buscar orden..."
-            className="w-full sm:max-w-sm"
+            placeholder="Buscar por código, cliente o técnico..."
           />
-
-          <Select
-            value={filtroEstado}
-            onValueChange={(value) =>
-              setFiltroEstado((value as FiltroEstado | null) ?? "TODOS")
-            }
-          >
-            <SelectTrigger className="w-full sm:w-[180px]">
+          <Select value={filtroEstado} onValueChange={(val) => setFiltroEstado(val as FiltroEstado)}>
+            <SelectTrigger className="w-36 text-xs">
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="TODOS">Todos los estados</SelectItem>
-              {ESTADOS_ORDEN.map((estado) => (
-                <SelectItem key={estado} value={estado}>
-                  {estado}
+              <SelectItem value="TODOS">Todos</SelectItem>
+              {ESTADOS_ORDEN.map((st) => (
+                <SelectItem key={st} value={st}>
+                  {st}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -345,7 +336,7 @@ export const Recepciones = () => {
 
         <Button
           type="button"
-          className="w-full shrink-0 sm:w-auto cursor-pointer"
+          className="shrink-0"
           onClick={() => setIsModalOpen(true)}
         >
           <Plus className="size-4" />
@@ -367,6 +358,16 @@ export const Recepciones = () => {
         open={isDetalleOpen}
         onOpenChange={setIsDetalleOpen}
         orden={ordenParaVer}
+        onVerTicketRollo={(ord) => {
+          setTicketOrden(ord)
+          setIsTicketModalOpen(true)
+        }}
+      />
+
+      <ModalTicketOrdenTecnica
+        open={isTicketModalOpen}
+        onOpenChange={setIsTicketModalOpen}
+        orden={ticketOrden}
       />
 
       <ModalAsignarTecnico

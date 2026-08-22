@@ -102,7 +102,6 @@ export function buildProformaTicketHtml(
   empresa: EmpresaConfig | null
 ): string {
   const nombreEmpresa = escapeHtml(empresa?.nombreEmpresa || "Empresa")
-  const nit = escapeHtml(empresa?.nit)
   const telefono = escapeHtml(empresa?.telefono)
   const email = escapeHtml(empresa?.email)
   const direccion = escapeHtml(empresa?.direccion)
@@ -183,7 +182,6 @@ export function buildProformaTicketHtml(
   <div class="ticket">
     <div class="center">
       <div class="empresa-nombre">${nombreEmpresa}</div>
-      ${nit ? `<div class="muted">NIT: ${nit}</div>` : ""}
       ${direccion ? `<div class="muted">${direccion}</div>` : ""}
       ${telefono ? `<div class="muted">Tel: ${telefono}</div>` : ""}
       ${email ? `<div class="muted">${email}</div>` : ""}

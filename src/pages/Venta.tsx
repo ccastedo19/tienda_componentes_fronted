@@ -186,12 +186,14 @@ export const Venta = () => {
   }, [proformas])
 
   const ordenOptions = useMemo<SmartComboboxOption[]>(() => {
-    return ordenesTecnicas.map((ord) => ({
-      value: ord.id,
-      label: `${ord.codigoOrden} — ${ord.clienteNombre}`,
-      description: `CI/NIT: ${ord.clienteCi} • Estado: ${ord.estado} • Repuestos: ${ord.componentes?.length || 0} • Servicios: ${ord.servicios?.length || 0}`,
-      keywords: `${ord.codigoOrden} ${ord.clienteCi} ${ord.clienteNombre}`,
-    }))
+    return ordenesTecnicas
+      .filter((ord) => ord.estado !== "Pagada" && ord.estado !== "Cancelada")
+      .map((ord) => ({
+        value: ord.id,
+        label: `${ord.codigoOrden} — ${ord.clienteNombre}`,
+        description: `CI/NIT: ${ord.clienteCi} • Estado: ${ord.estado} • Repuestos: ${ord.componentes?.length || 0} • Servicios: ${ord.servicios?.length || 0}`,
+        keywords: `${ord.codigoOrden} ${ord.clienteCi} ${ord.clienteNombre}`,
+      }))
   }, [ordenesTecnicas])
 
   const handleSelectCliente = (value: string | null) => {
@@ -314,6 +316,15 @@ export const Venta = () => {
   }
 
   const handleCargarOrdenTecnicaEnCarrito = (orden: OrdenTecnica) => {
+    if (orden.estado === "Pagada") {
+      setError(`SRS-POS-010: La orden técnica ${orden.codigoOrden} ya fue cobrada y pagada en POS previamente.`)
+      return
+    }
+    if (orden.estado === "Cancelada") {
+      setError(`La orden técnica ${orden.codigoOrden} se encuentra cancelada.`)
+      return
+    }
+
     const newCart: CartItem[] = []
 
     if (orden.componentes) {

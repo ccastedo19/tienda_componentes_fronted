@@ -1,4 +1,4 @@
-import { Eye, ShoppingCart, User, Clock, FileText, Wrench, Package, Hash } from "lucide-react"
+import { Eye, ShoppingCart, User, Clock, FileText, Wrench, Package, Hash, CheckCircle2, Receipt } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 import { Badge } from "@/components/ui/badge"
@@ -18,16 +18,20 @@ interface ModalDetalleOrdenTecnicaProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   orden: OrdenTecnica | null
+  onVerTicketRollo?: (orden: OrdenTecnica) => void
 }
 
 export function ModalDetalleOrdenTecnica({
   open,
   onOpenChange,
   orden,
+  onVerTicketRollo,
 }: ModalDetalleOrdenTecnicaProps) {
   const navigate = useNavigate()
 
   if (!orden) return null
+
+  const isPagada = orden.estado === "Pagada" || Boolean(orden.ventaId)
 
   const totalServicios =
     orden.servicios?.reduce((acc, s) => acc + (s.precioAplicado || 0), 0) ?? 0
@@ -55,10 +59,14 @@ export function ModalDetalleOrdenTecnica({
                   : orden.estado === "En Proceso"
                   ? "info"
                   : orden.estado === "Finalizada"
+                  ? "secondary"
+                  : orden.estado === "Pagada"
                   ? "success"
                   : "destructive"
               }
+              className={isPagada ? "gap-1" : ""}
             >
+              {isPagada && <CheckCircle2 className="size-3" />}
               {orden.estado}
             </Badge>
           </div>
@@ -95,7 +103,7 @@ export function ModalDetalleOrdenTecnica({
 
             <div>
               <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <Clock className="size-3" /> Fecha Finalización
+                <Clock className="size-3" /> Fecha Finalización / Liquidación
               </span>
               <p className="text-xs font-medium text-foreground">
                 {orden.fechaHoraFinalizacion
@@ -104,6 +112,54 @@ export function ModalDetalleOrdenTecnica({
               </p>
             </div>
           </div>
+
+          {/* Sección si la orden fue PAGADA en POS */}
+          {isPagada && (
+            <div className="p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-bold text-emerald-700 dark:text-emerald-300 text-xs">
+                  <Receipt className="size-4" />
+                  <span>Liquidación Registrada en POS</span>
+                </div>
+                <Badge variant="success">COBRO COMPLETADO</Badge>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                <div>
+                  <span className="text-muted-foreground">Comprobante:</span>
+                  <p className="font-mono font-bold text-foreground">{orden.codigoNotaVenta || "Nota de Venta"}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Monto Cobrado:</span>
+                  <p className="font-bold text-emerald-600 dark:text-emerald-400">
+                    Bs. {(orden.montoTotalCobrado ?? 0).toFixed(2)}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Método Pago:</span>
+                  <p className="font-medium text-foreground">{orden.metodoPagoVenta || "Efectivo"}</p>
+                </div>
+              </div>
+
+              {onVerTicketRollo && (
+                <div className="pt-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="xs"
+                    onClick={() => {
+                      onOpenChange(false)
+                      onVerTicketRollo(orden)
+                    }}
+                    className="w-full sm:w-auto bg-background cursor-pointer gap-1 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/10"
+                  >
+                    <FileText className="size-3.5" />
+                    Ver Comprobante 
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Diagnóstico y Observaciones */}
           <div className="space-y-2">
@@ -225,7 +281,7 @@ export function ModalDetalleOrdenTecnica({
             Cerrar
           </Button>
 
-          {orden.estado !== "Cancelada" && (
+          {!isPagada && orden.estado !== "Cancelada" && (
             <Button
               type="button"
               onClick={handleIrAlPos}

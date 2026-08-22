@@ -25,8 +25,7 @@ Gestionar y mostrar componentes de una tienda con una interfaz moderna, accesibl
 <!-- AUTO:metadata:START -->
 - **Proyecto**: tienda_componentes_full
 - **Versión**: 0.0.0
-- **Última actualización automática**: 2026-08-20T03:55:26.267Z
-
+- **Última actualización automática**: 2026-08-21T23:30:29.228Z
 - **Última modificación en `src/`**: 2026-08-16T01:25:50.518Z
 <!-- AUTO:metadata:END -->
 
@@ -134,6 +133,9 @@ src/
 - `src/components/Modal/ModalProveedor.tsx`
 - `src/components/Modal/ModalSeries.tsx`
 - `src/components/Modal/ModalServicio.tsx`
+- `src/components/Modal/ModalTicketOrdenTecnica.tsx`
+- `src/components/Modal/ModalTicketProforma.tsx`
+- `src/components/Modal/ModalTicketVenta.tsx`
 - `src/components/Modal/ModalUsuario.tsx`
 - `src/components/ProtectedRoute.tsx`
 - `src/components/app-sidebar.tsx`
@@ -155,6 +157,9 @@ src/
 - `src/lib/api/config.ts`
 - `src/lib/auth/storage.ts`
 - `src/lib/format-date.ts`
+- `src/lib/nota-venta-ticket.ts`
+- `src/lib/orden-tecnica-ticket.ts`
+- `src/lib/proforma-ticket.ts`
 - `src/lib/utils.ts`
 <!-- AUTO:structure:END -->
 

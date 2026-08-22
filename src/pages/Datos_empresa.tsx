@@ -10,7 +10,6 @@ import { getEmpresaConfig, saveEmpresaConfig } from "@/services/empresa.service"
 
 export const Datos_empresa = () => {
   const [nombreEmpresa, setNombreEmpresa] = useState("")
-  const [nit, setNit] = useState("")
   const [telefono, setTelefono] = useState("")
   const [email, setEmail] = useState("")
   const [direccion, setDireccion] = useState("")
@@ -31,7 +30,6 @@ export const Datos_empresa = () => {
       .then((config) => {
         if (!isMounted) return
         setNombreEmpresa(config.nombreEmpresa ?? "")
-        setNit(config.nit ?? "")
         setTelefono(config.telefono ?? "")
         setEmail(config.email ?? "")
         setDireccion(config.direccion ?? "")
@@ -60,7 +58,6 @@ export const Datos_empresa = () => {
     try {
       await saveEmpresaConfig({
         nombreEmpresa: nombreEmpresa.trim(),
-        nit: nit.trim(),
         telefono: telefono.trim(),
         email: email.trim(),
         direccion: direccion.trim(),
@@ -117,24 +114,13 @@ export const Datos_empresa = () => {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
                   <div className="space-y-1.5">
                     <Label htmlFor="nombre">Razón Social / Nombre Comercial *</Label>
                     <Input
                       id="nombre"
                       value={nombreEmpresa}
                       onChange={(e) => setNombreEmpresa(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="nit">NIT / Número de Identificación Tributaria *</Label>
-                    <Input
-                      id="nit"
-                      value={nit}
-                      onChange={(e) => setNit(e.target.value)}
-                      placeholder="NIT / CI"
                       required
                     />
                   </div>

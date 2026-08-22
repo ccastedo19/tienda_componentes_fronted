@@ -70,8 +70,8 @@ export function ModalServicio({
       const res = await uploadImage(file, "servicios")
       setImagenUrl(res.secure_url || res.url)
       setImagenPublicId(res.public_id)
-    } catch {
-      setError("No se pudo subir la imagen a Cloudinary.")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo subir la imagen a Cloudinary.")
     } finally {
       setIsUploading(false)
     }

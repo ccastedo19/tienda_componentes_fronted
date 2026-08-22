@@ -22,7 +22,7 @@ export async function createOrdenTecnica(payload: CreateOrdenTecnicaRequest): Pr
 
 export async function updateOrdenTecnicaEstado(
   id: string,
-  nuevoEstado: "Pendiente" | "En Proceso" | "Finalizada" | "Cancelada"
+  nuevoEstado: OrdenTecnica["estado"]
 ): Promise<OrdenTecnica> {
   return apiRequest<OrdenTecnica>(`/ordenes-tecnicas/${id}/estado?nuevoEstado=${nuevoEstado}`, {
     method: "PATCH",
